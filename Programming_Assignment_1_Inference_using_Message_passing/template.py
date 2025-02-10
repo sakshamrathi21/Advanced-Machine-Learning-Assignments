@@ -371,6 +371,7 @@ class Inference:
             neighbor = tuple(neighbor)
             if (neighbor, root) in messages:
                 message = messages[(neighbor, root)]
+                print(root_potential, message)
                 new_potential = [root_potential[i] * message[i] for i in range(len(root_potential))]
                 root_potential = new_potential
         
