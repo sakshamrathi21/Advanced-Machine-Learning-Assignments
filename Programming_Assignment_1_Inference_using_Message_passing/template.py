@@ -343,11 +343,15 @@ class Inference:
             separator = tuple(sorted(set(from_clique) & set(to_clique)))
             message = [0] * (2 ** len(separator))
             from_potential = clique_potentials[from_clique]
+
             for i in range(len(from_potential)):
                 assignment = [(i >> j) & 1 for j in range(len(from_clique))]
                 separator_index = sum([(assignment[from_clique.index(var)] << j) for j, var in enumerate(separator)])
-                message[separator_index] += from_potential[i]
+
+                message[separator_index] += from_potential[i]  # Correct marginalization over non-separator variables
+
             messages[(from_clique, to_clique)] = message
+
         parent_map = {}
         messages = {}
         visited = set()
