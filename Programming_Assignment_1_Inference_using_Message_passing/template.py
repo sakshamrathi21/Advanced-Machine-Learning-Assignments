@@ -131,6 +131,7 @@ class Inference:
         # print(data)
         for i in range(num_cliques):
             self.cliques.append(data['Cliques and Potentials'][i]['cliques'])
+        # print(self.cliques)
         self.adjacency_matrix = [[0 for i in range(self.num_variables)] for j in range(self.num_variables)]
         for i in self.cliques:
             for j in range(len(i)):
@@ -309,7 +310,7 @@ class Inference:
         for clique in self.maximal_cliques:
             cliques_subsumed = []
             for clique_subsumed in self.cliques:
-                if set(clique).issubset(set(clique_subsumed)):
+                if set(clique).issubset(set(clique_subsumed)) and clique not in cliques_subsumed:
                     cliques_subsumed.append(clique_subsumed)
             potentials = [1 for i in range(pow(2, len(clique)))]
             for i in range(len(potentials)):
@@ -335,7 +336,48 @@ class Inference:
         
         Refer to the problem statement for details on computing the partition function.
         """
+        junction_tree = self.get_junction_tree()
+        clique_potentials = {tuple(clique): self.maximal_clique_potentials[i] for i, clique in enumerate(self.maximal_cliques)}
+        root = tuple(self.maximal_cliques[0])
+        def send_message(from_clique, to_clique, parent_map, messages):
+            separator = tuple(sorted(set(from_clique) & set(to_clique)))
+            message = [0] * (2 ** len(separator))
+            from_potential = clique_potentials[from_clique]
+            for i in range(len(from_potential)):
+                assignment = [(i >> j) & 1 for j in range(len(from_clique))]
+                separator_index = sum([(assignment[from_clique.index(var)] << j) for j, var in enumerate(separator)])
+                message[separator_index] += from_potential[i]
+            messages[(from_clique, to_clique)] = message
+        parent_map = {}
+        messages = {}
+        visited = set()
+        stack = [(root, None)]
+        while stack:
+            node, parent = stack.pop()
+            visited.add(tuple(node))
+            parent_map[tuple(node)] = parent
+            for neighbor in [clique for clique in self.maximal_cliques if set(node) & set(clique)]:
+                if tuple(neighbor) not in visited:
+                    stack.append((neighbor, tuple(node)))
+                    
+        for clique, parent in reversed(list(parent_map.items())):
+            if parent:
+                send_message(clique, parent, parent_map, messages)
         
+        # Downward phase: compute Z
+        root_potential = clique_potentials[root]
+        
+        for neighbor in [clique for clique in self.maximal_cliques if set(root) & set(clique)]:
+            neighbor = tuple(neighbor)
+            if (neighbor, root) in messages:
+                message = messages[(neighbor, root)]
+                new_potential = [root_potential[i] * message[i] for i in range(len(root_potential))]
+                root_potential = new_potential
+        
+        # Z value is the sum over all assignments of the root clique
+        Z = sum(root_potential)
+        print(Z)
+        # def send_message(from_clique)
         pass
 
     def compute_marginals(self):
