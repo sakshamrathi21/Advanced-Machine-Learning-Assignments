@@ -371,15 +371,19 @@ class Inference:
             neighbor = tuple(neighbor)
             if (neighbor, root) in messages:
                 message = messages[(neighbor, root)]
-                print(root_potential, message)
-                new_potential = [root_potential[i] * message[i] for i in range(len(root_potential))]
+                separator = tuple(sorted(set(root) & set(neighbor)))
+                new_potential = [0] * len(root_potential)
+
+                for i in range(len(root_potential)):
+                    assignment = [(i >> j) & 1 for j in range(len(root))]
+                    separator_index = sum([(assignment[root.index(var)] << j) for j, var in enumerate(separator)])
+
+                    new_potential[i] = root_potential[i] * message[separator_index]
+
                 root_potential = new_potential
-        
-        # Z value is the sum over all assignments of the root clique
+
         Z = sum(root_potential)
-        print(Z)
-        # def send_message(from_clique)
-        pass
+        return Z
 
     def compute_marginals(self):
         """
