@@ -337,6 +337,7 @@ class Inference:
         Refer to the problem statement for details on computing the partition function.
         """
         junction_tree = self.get_junction_tree()
+        print(self.maximal_clique_potentials)
         clique_potentials = {tuple(clique): self.maximal_clique_potentials[i] for i, clique in enumerate(self.maximal_cliques)}
         root = tuple(self.maximal_cliques[0])
         def send_message(from_clique, to_clique, parent_map, messages):
@@ -387,6 +388,7 @@ class Inference:
                 root_potential = new_potential
 
         Z = sum(root_potential)
+        print(Z)
         return Z
 
     def compute_marginals(self):
@@ -452,6 +454,6 @@ class Get_Input_and_Check_Output:
 
 
 if __name__ == '__main__':
-    evaluator = Get_Input_and_Check_Output('Sample_Testcase.json')
+    evaluator = Get_Input_and_Check_Output('t.json')
     evaluator.get_output()
     evaluator.write_output('Sample_Testcase_Output.json')
