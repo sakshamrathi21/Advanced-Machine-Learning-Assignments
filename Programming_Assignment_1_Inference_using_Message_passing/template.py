@@ -135,6 +135,8 @@ class Inference:
         num_cliques = data['Potentials_count']
         # print(data)
         for i in range(num_cliques):
+            if data['Cliques and Potentials'][i] in self.cliques:
+                continue
             self.cliques.append(data['Cliques and Potentials'][i]['cliques'])
         # print(self.cliques)
         self.adjacency_matrix = [[0 for i in range(self.num_variables)] for j in range(self.num_variables)]
@@ -156,8 +158,15 @@ class Inference:
                     temp.append(j)
             self.adjacency_list.append(temp)
         for i in range(num_cliques):
-            self.cliques.append(data['Cliques and Potentials'][i]['cliques'])
-            self.potentials[tuple(data['Cliques and Potentials'][i]['cliques'])] = []
+            # self.cliques.append(data['Cliques and Potentials'][i]['cliques'])
+            clique = tuple(data['Cliques and Potentials'][i]['cliques'])
+            new_potentials = data['Cliques and Potentials'][i]['potentials']
+            if clique in self.potentials:
+                # Multiply element-wise with the existing potential values
+                self.potentials[clique] = [old * new for old, new in zip(self.potentials[clique], new_potentials)]
+            else:
+                # Assign new potentials if clique does not exist
+                self.potentials[clique] = new_potentials[:]
             for j in range(pow(2, data['Cliques and Potentials'][i]['clique_size'])):
                 self.potentials[tuple(data['Cliques and Potentials'][i]['cliques'])].append(data['Cliques and Potentials'][i]['potentials'][j])
         self.k_value = data['k value (in top k)']
@@ -417,6 +426,7 @@ class Inference:
         Z = sum(root_potential)
         self.messages = messages
         self.z = Z
+        # print(Z)
         return Z
 
     def compute_marginals(self):
@@ -450,6 +460,7 @@ class Inference:
                 print("ERROR!!!")
                 return
             from_potential = clique_potentials[tuple(m_clique)][:] 
+            # print(self.maximal_cliques, self.messages)
             for nc in self.maximal_cliques:
                 if set(nc) & set(m_clique) and nc != m_clique:
                     separator = tuple(sorted(set(m_clique) & set(nc)))
