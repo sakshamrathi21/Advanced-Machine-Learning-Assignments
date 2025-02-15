@@ -1,16 +1,15 @@
-def get_z_value(self):
-        """
-        Compute the partition function (Z value) of the graphical model.
+def compute_top_k(self):
+        """ 
+        Compute the top-k most probable assignments in the graphical model.
         
         What to do here:
         ----------------
-        - Implement the message passing algorithm to compute the partition function (Z value).
-        - The Z value is the normalization constant for the probability distribution.
+        - Use the message passing algorithm to find the top-k assignments with the highest probabilities.
+        - Return the assignments along with their probabilities in the specified format.
         
-        Refer to the problem statement for details on computing the partition function.
+        Refer to the sample test case for the expected format of the top-k assignments.
         """
-        if self.z != -1:
-            return self.z
+        print(self.k_value)
         junction_tree = self.get_junction_tree()
         junction_tree_adj_list = {}
         for edge in junction_tree:
@@ -26,8 +25,8 @@ def get_z_value(self):
                 junction_tree_adj_list[b].append(a)
         
         root = tuple(self.maximal_cliques[0])
-        depth_map = {root:0}
-
+        depth_map = {root: 0}
+        # print(depth_map)
         def dfs(node, parent, depth):
             for child in junction_tree_adj_list[node]:
                 if child != parent:
@@ -36,62 +35,61 @@ def get_z_value(self):
         
         dfs(root, None, 1)
         
-        def send_message(from_clique, to_clique, parent_map, clique_potentials, messages):
+        def send_message_top_k(from_clique, to_clique, parent_map, clique_potentials, messages, k):
             separator = tuple(sorted(set(from_clique) & set(to_clique)))
-            message = [0] * (2 ** len(separator))
-            from_potential = clique_potentials[from_clique][:] 
-            for neighbor in parent_map.get(from_clique, []):  
+            message = []
+            from_potential = list(enumerate(clique_potentials[from_clique][:]))             
+            for neighbor in parent_map.get(from_clique, []): 
+                # print("Neighbor", neighbor) 
                 if neighbor != to_clique and (neighbor, from_clique) in messages:
-                    incoming_message = messages[(neighbor, from_clique)]
-                    for i in range(len(from_potential)):
-                        assignment = [(i >> j) & 1 for j in range(len(from_clique))]
+                    incoming_messages = messages[(neighbor, from_clique)]
+                    new_potentials = []
+                    
+                    for index, value in from_potential:
+                        assignment = [(index >> j) & 1 for j in range(len(from_clique))]
                         separator_index = sum([(assignment[from_clique.index(var)] << j) for j, var in enumerate(set(from_clique) & set(neighbor))])
-                        from_potential[i] *= incoming_message[separator_index]
-            for i in range(len(from_potential)):
-                assignment = [(i >> j) & 1 for j in range(len(from_clique))]
+                        new_potentials.append((index, value * incoming_messages[separator_index][1]))
+                    print("New potentials", new_potentials) 
+                    from_potential = sorted(new_potentials, key=lambda x: -x[1])[:k]  # Keep only top-k values
+            # print("hello", from_potential)
+            separator_potentials = {}
+            
+            for index, value in from_potential:
+                assignment = [(index >> j) & 1 for j in range(len(from_clique))]
                 separator_index = sum([(assignment[from_clique.index(var)] << j) for j, var in enumerate(separator)])
-                message[separator_index] += from_potential[i] 
+                
+                if separator_index not in separator_potentials:
+                    separator_potentials[separator_index] = []
+                separator_potentials[separator_index].append((index, value))
+            # print("Check", separator_potentials)
+            for sep_idx, values in separator_potentials.items():
+                values.sort(key=lambda x: -x[1])
+                message.append((sep_idx, sum(v[1] for v in values[:k])))  # Sum top-k contributions
+            print("Message", message, from_clique, to_clique)
             messages[(from_clique, to_clique)] = message
-
-        messages = {}   
-        clique_potentials = {tuple(clique): self.maximal_clique_potentials[i] for i, clique in enumerate(self.maximal_cliques)} 
-        # print(clique_potentials)
-        max_depth = max(depth_map.values()) 
-        # print(max_depth)   
-        for depth in range(max_depth, -1, -1):
+        
+        messages = {}
+        clique_potentials = {tuple(clique): self.maximal_clique_potentials[i] for i, clique in enumerate(self.maximal_cliques)}
+        max_depth = max(depth_map.values())
+        
+        for depth in range(max_depth, -1, -1):  # Send messages from leaves to root
             for clique, d in depth_map.items():
-                if d == depth: 
+                if d == depth:
                     parent = [p for p in junction_tree_adj_list[clique] if depth_map[p] == depth - 1]
                     for p in parent:
-                        send_message(clique, p, junction_tree_adj_list, clique_potentials, messages)
-
-        for depth in range(0, max_depth + 1): 
-            for clique, d in depth_map.items():
-                if d == depth: 
-                    children = [c for c in junction_tree_adj_list[clique] if depth_map[c] == depth + 1]
-                    for c in children:
-                        send_message(clique, c, junction_tree_adj_list, clique_potentials, messages)
-        self.clique_potentials = copy.deepcopy(clique_potentials)
-        # print("hello copy", self.clique_potentials)
+                        send_message_top_k(clique, p, junction_tree_adj_list, clique_potentials, messages, self.k_value)
+       
         root_potential = clique_potentials[root]
-        for neighbor in self.maximal_cliques:
-            neighbor = tuple(neighbor)
-            if set(root) & set(neighbor):
-                if (neighbor, root) in messages:
-                    message = messages[(neighbor, root)]
-                    separator = tuple(sorted(set(root) & set(neighbor)))
-
-                    for i in range(len(root_potential)):
-                        assignment = [(i >> j) & 1 for j in range(len(root))]
-                        separator_index = sum([(assignment[root.index(var)] << j) for j, var in enumerate(separator)])
-                        root_potential[i] *= message[separator_index]  # Modify in-place
-        # print("Clique potentials:", self.maximal_clique_potentials)
-        # print(self.maximal_clique_potentials)
-        # self.maximal_clique_potentials = 
-        # self.maximal_clique_potentials = dict(clique_potentials_copy)
-        # print(self.maximal_clique_potentials)
-        Z = sum(root_potential)
-        self.messages = messages
-        self.z = Z
-        # print(Z)
-        return Z
+        for child in junction_tree_adj_list[root]:
+            if (child, root) in messages:
+                incoming_message = messages[(child, root)]
+                for i in range(len(root_potential)):
+                    assignment = [(i >> j) & 1 for j in range(len(root))]
+                    separator_index = sum([(assignment[root.index(var)] << j) for j, var in enumerate(set(root) & set(child))])
+                    if separator_index < len(incoming_message):
+                        print(root_potential[i], "hello", incoming_message[separator_index])
+                        root_potential[i] *= incoming_message[separator_index][1]
+        print("Root potential", root_potential)
+        top_k_assignments = sorted(enumerate(root_potential), key=lambda x: -x[1])[:self.k_value]  # Select top-k assignments at root
+        print(top_k_assignments)
+        return [(bin(index)[2:].zfill(len(root)), prob) for index, prob in top_k_assignments]
