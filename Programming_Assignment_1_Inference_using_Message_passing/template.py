@@ -562,7 +562,7 @@ class Inference:
                         root_potential[i] *= incoming_message[separator_index][1]
         print("Root potential", root_potential)
         top_k_assignments = sorted(enumerate(root_potential), key=lambda x: -x[1])[:self.k_value]  # Select top-k assignments at root
-        # print(top_k_assignments)
+        print(top_k_assignments)
         return [(bin(index)[2:].zfill(len(root)), prob) for index, prob in top_k_assignments]
 
 
