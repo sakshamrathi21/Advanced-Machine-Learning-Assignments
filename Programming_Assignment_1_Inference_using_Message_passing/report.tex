@@ -1,0 +1,137 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{xcolor}
+\usepackage{algorithm}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{titlesec}
+\usepackage{tikz}
+\usepackage{booktabs}
+\usepackage{array}
+\usetikzlibrary{positioning,arrows.meta} % Load the positioning library
+
+\usetikzlibrary{shadows}
+\usepackage{tcolorbox}
+\usepackage{float}
+\usepackage{lipsum}
+\usepackage{mdframed}
+\usepackage{pagecolor}
+\usepackage{mathpazo}   % Palatino font (serif)
+\usepackage{microtype}  % Better typography
+
+% Page background color
+\pagecolor{gray!10!white}
+
+% Geometry settings
+\geometry{margin=0.5in}
+\pagestyle{fancy}
+\fancyhf{}
+
+% Fancy header and footer
+\fancyhead[C]{\textbf{\color{blue!80}CS726 Programming Assignment -- 1 Report}}
+\fancyhead[R]{\color{blue!80}Bayesian Bunch}
+\fancyfoot[C]{\thepage}
+
+% Custom Section Color and Format with Sans-serif font
+\titleformat{\section}
+{\sffamily\color{purple!90!black}\normalfont\Large\bfseries}
+{\thesection}{1em}{}
+
+% Custom subsection format
+\titleformat{\subsection}
+{\sffamily\color{cyan!80!black}\normalfont\large\bfseries}
+{\thesubsection}{1em}{}
+
+% Stylish Title with TikZ (Enhanced with gradient)
+\newcommand{\cooltitle}[1]{%
+  \begin{tikzpicture}
+    \node[fill=blue!20,rounded corners=10pt,inner sep=12pt, drop shadow, top color=blue!50, bottom color=blue!30] (box)
+    {\Huge \bfseries \color{black} #1};
+  \end{tikzpicture}
+}
+\usepackage{float} % Add this package
+
+\newenvironment{solution}[2][]{%
+    \begin{mdframed}[linecolor=blue!70!black, linewidth=2pt, roundcorner=10pt, backgroundcolor=yellow!10!white, skipabove=12pt, skipbelow=12pt]%
+        \textbf{\large #2}
+        \par\noindent\rule{\textwidth}{0.4pt}
+}{
+    \end{mdframed}
+}
+
+% Document title
+\title{\cooltitle{CS726 Scribe Notes}}
+\author{{\bf Saksham (22B1003), Sharvanee (22B0943), Deeksha (22B0988)} \\
+\small Department of Computer Science, \\
+Indian Institute of Technology Bombay \\}
+\date{}
+
+\begin{document}
+\maketitle
+
+
+
+\section{Marginal Probability}
+Here is the pseudocode for sharing messages between the maximal cliques of the graph.
+
+Firstly, we show how to calculate the Z value for the given graph.
+
+\begin{algorithm}
+    \caption{Computation of Partition Function \( Z \)}
+    \begin{algorithmic}[1]
+    \Require Graphical Model with maximal cliques and potentials
+    \Ensure Partition function \( Z \)
+    
+    \State Construct the junction tree \( JT \) from maximal cliques
+    \State Initialize adjacency list \( JT_{adj} \) from \( JT \)
+    
+    \State Select a root clique \( C_{root} \)
+    \State Initialize depth map with \( C_{root} \) at depth 0
+    
+    \Function{DFS}{$node, parent, depth$}
+        \For{each child in \( JT_{adj}[node] \)}
+            \If{child $\neq$ parent}
+                \State Update depth map
+                \State Call DFS on child with depth $+1$
+            \EndIf
+        \EndFor
+    \EndFunction
+    
+    \State Perform DFS from \( C_{root} \)
+    
+    \Function{SendMessage}{$C_{from}, C_{to}$}
+        \State Compute separator set \( S = C_{from} \cap C_{to} \)
+        \State Initialize message vector \( M \) of size \( 2^{|S|} \)
+        \State Modify clique potential based on incoming messages
+        \For{each state assignment in \( C_{from} \)}
+            \State Compute corresponding separator index
+            \State Aggregate message value
+        \EndFor
+        \State Store message \( M(C_{from} \to C_{to}) \)
+    \EndFunction
+    
+    \State Initialize messages dictionary
+    \State Initialize clique potentials
+    
+    \For{each clique from deepest to root}
+        \State Send messages to parent cliques
+    \EndFor
+    
+    \For{each clique from root to leaves}
+        \State Send messages to child cliques
+    \EndFor
+    
+    \State Compute partition function \( Z \) using root clique potential and received messages
+    \State \Return \( Z \)
+    
+    \end{algorithmic}
+\end{algorithm}
+    
+
+
+
+\end{document}
