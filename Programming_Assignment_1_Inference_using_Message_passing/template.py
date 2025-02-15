@@ -386,9 +386,7 @@ class Inference:
 
         messages = {}   
         clique_potentials = {tuple(clique): self.maximal_clique_potentials[i] for i, clique in enumerate(self.maximal_cliques)} 
-        # print(clique_potentials)
-        max_depth = max(depth_map.values()) 
-        # print(max_depth)   
+        max_depth = max(depth_map.values())   
         for depth in range(max_depth, -1, -1):
             for clique, d in depth_map.items():
                 if d == depth: 
@@ -403,7 +401,6 @@ class Inference:
                     for c in children:
                         send_message(clique, c, junction_tree_adj_list, clique_potentials, messages)
         self.clique_potentials = copy.deepcopy(clique_potentials)
-        # print("hello copy", self.clique_potentials)
         root_potential = clique_potentials[root]
         for neighbor in self.maximal_cliques:
             neighbor = tuple(neighbor)
@@ -415,16 +412,10 @@ class Inference:
                     for i in range(len(root_potential)):
                         assignment = [(i >> j) & 1 for j in range(len(root))]
                         separator_index = sum([(assignment[root.index(var)] << j) for j, var in enumerate(separator)])
-                        root_potential[i] *= message[separator_index]  # Modify in-place
-        # print("Clique potentials:", self.maximal_clique_potentials)
-        # print(self.maximal_clique_potentials)
-        # self.maximal_clique_potentials = 
-        # self.maximal_clique_potentials = dict(clique_potentials_copy)
-        # print(self.maximal_clique_potentials)
+                        root_potential[i] *= message[separator_index] 
         Z = sum(root_potential)
         self.messages = messages
         self.z = Z
-        # print(Z)
         return Z
 
     def compute_marginals(self):
@@ -439,8 +430,6 @@ class Inference:
         Refer to the sample test case for the expected format of the marginals.
         """
         clique_potentials = self.clique_potentials
-        # clique_potentials = {tuple(clique): self.maximal_clique_potentials[i] for i, clique in enumerate(self.maximal_cliques)}
-        # print("check", clique_potentials)
         z_value = self.get_z_value()
         junction_tree = self.get_junction_tree()
         adjacency_list = {}
@@ -459,35 +448,23 @@ class Inference:
             if m_clique == []:
                 print("ERROR!!!")
                 return
-            # print("m_clique", m_clique) 
             from_potential = clique_potentials[tuple(m_clique)][:] 
             for nc in self.maximal_cliques:
                 if set(nc) & set(m_clique) and nc != m_clique:
                     separator = tuple(sorted(set(m_clique) & set(nc)))
-                    # message = [0] * (2 ** len(separator))
-                    
-                    # print(from_potential)
-                    # print(nc)
-                    # print(i, (nc, m_clique), self.messages[(tuple(nc), tuple(m_clique))])
                     incoming_message = self.messages[(tuple(nc), tuple(m_clique))]
                     for ci in range(len(from_potential)):
                         assignment = [(ci >> j) & 1 for j in range(len(m_clique))]
                         separator_index = sum([(assignment[m_clique.index(var)] << j) for j, var in enumerate(set(m_clique) & set(nc))])
-                        # print("Index", ci, separator_index, incoming_message[separator_index])
-                        # print(from_potential[ci], incoming_message[separator_index])
                         from_potential[ci] *= incoming_message[separator_index]
-                        # print(from_potential[ci])
             ind = m_clique.index(i)
             for j in range(len(from_potential)):
                 if (j & (1<<ind)):
                     marginals[i][1] += from_potential[j]
                 else:
                     marginals[i][0] += from_potential[j]
-            # print(marginals[i])
             marginals[i][1] /= z_value
             marginals[i][0] /= z_value
-            # break
-        # print(marginals)
         return marginals
 
     def compute_top_k(self):
@@ -501,8 +478,93 @@ class Inference:
         
         Refer to the sample test case for the expected format of the top-k assignments.
         """
+        print(self.k_value)
+        junction_tree = self.get_junction_tree()
+        junction_tree_adj_list = {}
+        for edge in junction_tree:
+            a = tuple(edge[0])
+            b = tuple(edge[1])
+            if a not in junction_tree_adj_list:
+                junction_tree_adj_list[a] = [b]
+            else:
+                junction_tree_adj_list[a].append(b)
+            if b not in junction_tree_adj_list:
+                junction_tree_adj_list[b] = [a]
+            else:
+                junction_tree_adj_list[b].append(a)
+        
+        root = tuple(self.maximal_cliques[0])
+        depth_map = {root: 0}
+        print(depth_map)
+        def dfs(node, parent, depth):
+            for child in junction_tree_adj_list[node]:
+                if child != parent:
+                    depth_map[child] = depth
+                    dfs(child, node, depth + 1)
+        
+        dfs(root, None, 1)
+        
+        def send_message_top_k(from_clique, to_clique, parent_map, clique_potentials, messages, k):
+            separator = tuple(sorted(set(from_clique) & set(to_clique)))
+            message = []
+            from_potential = list(enumerate(clique_potentials[from_clique][:]))  # Store index and value
+            
+            
+            for neighbor in parent_map.get(from_clique, []): 
+                # print("Neighbor", neighbor) 
+                if neighbor != to_clique and (neighbor, from_clique) in messages:
+                    incoming_messages = messages[(neighbor, from_clique)]
+                    new_potentials = []
+                    
+                    for index, value in from_potential:
+                        assignment = [(index >> j) & 1 for j in range(len(from_clique))]
+                        separator_index = sum([(assignment[from_clique.index(var)] << j) for j, var in enumerate(set(from_clique) & set(neighbor))])
+                        new_potentials.append((index, value * incoming_messages[separator_index][1]))
+                    print("New potentials", new_potentials) 
+                    from_potential = sorted(new_potentials, key=lambda x: -x[1])[:k]  # Keep only top-k values
+            # print("hello", from_potential)
+            separator_potentials = {}
+            
+            for index, value in from_potential:
+                assignment = [(index >> j) & 1 for j in range(len(from_clique))]
+                separator_index = sum([(assignment[from_clique.index(var)] << j) for j, var in enumerate(separator)])
+                
+                if separator_index not in separator_potentials:
+                    separator_potentials[separator_index] = []
+                separator_potentials[separator_index].append((index, value))
+            print("Check", separator_potentials)
+            for sep_idx, values in separator_potentials.items():
+                values.sort(key=lambda x: -x[1])
+                message.append((sep_idx, sum(v[1] for v in values[:k])))  # Sum top-k contributions
+            print(message)
+            messages[(from_clique, to_clique)] = message
+        
+        messages = {}
+        clique_potentials = {tuple(clique): self.maximal_clique_potentials[i] for i, clique in enumerate(self.maximal_cliques)}
+        max_depth = max(depth_map.values())
+        
+        for depth in range(max_depth, -1, -1):  # Send messages from leaves to root
+            for clique, d in depth_map.items():
+                if d == depth:
+                    parent = [p for p in junction_tree_adj_list[clique] if depth_map[p] == depth - 1]
+                    for p in parent:
+                        send_message_top_k(clique, p, junction_tree_adj_list, clique_potentials, messages, self.k_value)
+       
+        root_potential = clique_potentials[root]
+        for child in junction_tree_adj_list[root]:
+            if (child, root) in messages:
+                incoming_message = messages[(child, root)]
+                for i in range(len(root_potential)):
+                    assignment = [(i >> j) & 1 for j in range(len(root))]
+                    separator_index = sum([(assignment[root.index(var)] << j) for j, var in enumerate(set(root) & set(child))])
+                    if separator_index < len(incoming_message):
+                        print(root_potential[i], "hello", incoming_message[separator_index])
+                        root_potential[i] *= incoming_message[separator_index]
+        print("Root potential", root_potential)
+        top_k_assignments = sorted(enumerate(root_potential), key=lambda x: -x[1])[:self.k_value]  # Select top-k assignments at root
+        # print(top_k_assignments)
+        return [(bin(index)[2:].zfill(len(root)), prob) for index, prob in top_k_assignments]
 
-        pass
 
 
 

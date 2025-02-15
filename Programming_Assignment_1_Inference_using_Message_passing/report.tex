@@ -130,6 +130,41 @@ Firstly, we show how to calculate the Z value for the given graph.
     
     \end{algorithmic}
 \end{algorithm}
+
+
+
+Here is the pseudocode for computing the marginal probabilities in the graphical model using message passing.
+
+\begin{algorithm}
+    \caption{Computation of Marginal Probabilities}
+    \begin{algorithmic}[1]
+    \Require Graphical Model with maximal cliques, clique potentials, and messages
+    \Ensure Marginal probabilities for each variable
+
+    \State Initialize adjacency list for junction tree
+    \State Retrieve partition function $Z$ using previously computed values
+    \State Initialize marginal probability list $M$ with zeros
+
+    \For{each variable $X_i$ in the graphical model}
+        \State Find a maximal clique $C$ containing $X_i$
+        \State Extract the potential function for clique $C$
+
+        \For{each neighboring clique $C'$ of $C$}
+            \State Compute separator set $S = C \cap C'$
+            \State Retrieve message $M(C' \to C)$
+            \For{each assignment in $C$}
+                \State Identify corresponding index in $S$
+                \State Multiply message values with clique potential
+            \EndFor
+        \EndFor
+
+        \State Compute marginal probability for $X_i$
+        \State Normalize values using $Z$
+    \EndFor
+
+    \State \Return $M$
+    \end{algorithmic}
+\end{algorithm}
     
 
 
