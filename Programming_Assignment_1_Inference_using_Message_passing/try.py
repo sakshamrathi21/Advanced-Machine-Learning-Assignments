@@ -100,6 +100,7 @@ class Inference:
         
         Refer to the sample test case for the structure of the input data.
         """
+        data = data[0]
         self.num_variables = data['VariablesCount']
         num_cliques = data['Potentials_count']
         for i in range(num_cliques):
@@ -311,6 +312,6 @@ class Get_Input_and_Check_Output:
 
 
 if __name__ == '__main__':
-    evaluator = Get_Input_and_Check_Output('Sample_Testcase.json')
+    evaluator = Get_Input_and_Check_Output('TestCases.json')
     evaluator.get_output()
     evaluator.write_output('Sample_Testcase_Output.json')
