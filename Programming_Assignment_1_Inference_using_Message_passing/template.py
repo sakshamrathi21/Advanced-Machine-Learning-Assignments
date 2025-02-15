@@ -491,7 +491,7 @@ class Inference:
         return marginals
 
     def compute_top_k(self):
-        """
+        """ 
         Compute the top-k most probable assignments in the graphical model.
         
         What to do here:
@@ -501,6 +501,35 @@ class Inference:
         
         Refer to the sample test case for the expected format of the top-k assignments.
         """
+        clique_potentials = self.clique_potentials
+        z_value = self.get_z_value()
+        junction_tree = self.get_junction_tree()
+        adjacency_list = {}
+        for i in range(len(self.maximal_cliques)):
+            adjacency_list[tuple(self.maximal_cliques[i])] = []
+        for i in range(len(junction_tree)):
+            adjacency_list[tuple(junction_tree[i][0])].append(junction_tree[i][1])
+            adjacency_list[tuple(junction_tree[i][1])].append(junction_tree[i][0])
+        top_k = []
+        for i in range(self.k_value):
+            top_k.append([0, []])
+        for i in range(1 << self.num_variables):
+            assignment = [(i >> j) & 1 for j in range(self.num_variables)]
+            prob = 1
+            for clique in self.maximal_cliques:
+                potential = clique_potentials[tuple(clique)]
+                index = 0
+                for j in range(len(clique)):
+                    index = index * 2 + assignment[clique[j]]
+                prob *= potential[index]
+            for j in range(self.k_value):
+                if prob > top_k[j][0]:
+                    top_k[j] = [prob, assignment]
+                    break
+        for i in range(self.k_value):
+            top_k[i][0] /= z_value
+        return top_k
+
         pass
 
 
