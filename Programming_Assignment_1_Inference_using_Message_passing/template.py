@@ -558,8 +558,8 @@ class Inference:
                     assignment = [(i >> j) & 1 for j in range(len(root))]
                     separator_index = sum([(assignment[root.index(var)] << j) for j, var in enumerate(set(root) & set(child))])
                     if separator_index < len(incoming_message):
-                        # print(root_potential[i], "hello", incoming_message[separator_index])
-                        root_potential[i] *= incoming_message[separator_index]
+                        print(root_potential[i], "hello", incoming_message[separator_index])
+                        root_potential[i] *= incoming_message[separator_index][1]
         print("Root potential", root_potential)
         top_k_assignments = sorted(enumerate(root_potential), key=lambda x: -x[1])[:self.k_value]  # Select top-k assignments at root
         # print(top_k_assignments)
