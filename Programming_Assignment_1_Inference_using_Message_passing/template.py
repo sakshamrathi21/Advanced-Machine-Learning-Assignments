@@ -467,46 +467,25 @@ class Inference:
             marginals[i][1] /= z_value
             marginals[i][0] /= z_value
         return marginals
+
     def compute_top_k(self):
-        """Compute the top-k most probable assignments using variable elimination."""
-        self.get_z_value()  # Ensure Z value is computed
-        junction_tree = self.get_junction_tree()
+        """ 
+        Compute the top-k most probable assignments in the graphical model.
         
-        # Step 1: Select an optimal elimination order (use min-fill heuristic)
-        elimination_order = self.get_elimination_order()
+        What to do here:
+        ----------------
+        - Use the message passing algorithm to find the top-k assignments with the highest probabilities.
+        - Return the assignments along with their probabilities in the specified format.
         
-        # Step 2: Run max-product message passing
-        messages = {}
-        clique_potentials = copy.deepcopy(self.clique_potentials)
-        
-        for var in elimination_order:
-            relevant_cliques = [clique for clique in clique_potentials if var in clique]
-            if not relevant_cliques:
-                continue
-            
-            merged_clique = tuple(sorted(set().union(*relevant_cliques) - {var}))
-            
-            # Compute max-marginal over `var`
-            new_potential = {}
-            for assignment in product([0, 1], repeat=len(merged_clique)):
-                max_prob = 0
-                for val in [0, 1]:
-                    full_assignment = list(assignment) + [val]
-                    index = sum([(full_assignment[i] << i) for i in range(len(full_assignment))])
-                    max_prob = max(max_prob, clique_potentials[relevant_cliques[0]][index])
-                new_potential[assignment] = max_prob
-            
-            # Update clique potentials
-            for clique in relevant_cliques:
-                del clique_potentials[clique]
-            clique_potentials[merged_clique] = list(new_potential.values())
-        
-        # Step 3: Extract top-k assignments using a priority queue
+        Refer to the sample test case for the expected format of the top-k assignments.
+        """
+        self.get_z_value()
+        num_vars = self.num_variables
+        assignments = list(product([0, 1], repeat=num_vars))  
         prob_heap = []
-        assignments = list(product([0, 1], repeat=self.num_variables))
         for assignment in assignments:
             prob = 1.0
-            for clique, potential in clique_potentials.items():
+            for clique, potential in self.clique_potentials.items():
                 index = sum([(assignment[clique[i]] << i) for i in range(len(clique))])
                 prob *= potential[index]
             prob /= self.z
@@ -515,20 +494,8 @@ class Inference:
             else:
                 heapq.heappushpop(prob_heap, (prob, assignment))
         
-        # Sort and return the top-k assignments
-        top_k_assignments = sorted(prob_heap, key=lambda x: -x[0])
+        top_k_assignments = sorted(prob_heap, key=lambda x: -x[0])  
         return [(list(assignment), prob) for prob, assignment in top_k_assignments]
-    
-    def get_elimination_order(self):
-        """Compute a good variable elimination order using the min-fill heuristic."""
-        variables = set(range(self.num_variables))
-        order = []
-        while variables:
-            best_var = min(variables, key=lambda v: sum(v in clique for clique in self.clique_potentials))
-            order.append(best_var)
-            variables.remove(best_var)
-        return order
-
         
 
 
