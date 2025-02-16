@@ -1,0 +1,247 @@
+[
+    {
+        "TestCaseNumber": 3,
+        "Input": {
+            "TestCaseNumber": 3,
+            "VariablesCount": 5,
+            "k value (in top k)": 3,
+            "Potentials_count": 15,
+            "Cliques and Potentials": [
+                {
+                    "clique_size": 1,
+                    "cliques": [
+                        0
+                    ],
+                    "potentials": [
+                        3,
+                        16
+                    ]
+                },
+                {
+                    "clique_size": 1,
+                    "cliques": [
+                        1
+                    ],
+                    "potentials": [
+                        20,
+                        2
+                    ]
+                },
+                {
+                    "clique_size": 1,
+                    "cliques": [
+                        2
+                    ],
+                    "potentials": [
+                        16,
+                        20
+                    ]
+                },
+                {
+                    "clique_size": 1,
+                    "cliques": [
+                        3
+                    ],
+                    "potentials": [
+                        7,
+                        8
+                    ]
+                },
+                {
+                    "clique_size": 1,
+                    "cliques": [
+                        4
+                    ],
+                    "potentials": [
+                        18,
+                        9
+                    ]
+                },
+                {
+                    "clique_size": 2,
+                    "cliques": [
+                        3,
+                        4
+                    ],
+                    "potentials": [
+                        3,
+                        6,
+                        8,
+                        20
+                    ]
+                },
+                {
+                    "clique_size": 2,
+                    "cliques": [
+                        0,
+                        4
+                    ],
+                    "potentials": [
+                        3,
+                        11,
+                        17,
+                        5
+                    ]
+                },
+                {
+                    "clique_size": 1,
+                    "cliques": [
+                        4
+                    ],
+                    "potentials": [
+                        17,
+                        13
+                    ]
+                },
+                {
+                    "clique_size": 2,
+                    "cliques": [
+                        1,
+                        4
+                    ],
+                    "potentials": [
+                        19,
+                        3,
+                        12,
+                        10
+                    ]
+                },
+                {
+                    "clique_size": 2,
+                    "cliques": [
+                        2,
+                        4
+                    ],
+                    "potentials": [
+                        10,
+                        4,
+                        11,
+                        9
+                    ]
+                },
+                {
+                    "clique_size": 2,
+                    "cliques": [
+                        0,
+                        4
+                    ],
+                    "potentials": [
+                        16,
+                        18,
+                        17,
+                        17
+                    ]
+                },
+                {
+                    "clique_size": 2,
+                    "cliques": [
+                        2,
+                        3
+                    ],
+                    "potentials": [
+                        17,
+                        20,
+                        1,
+                        16
+                    ]
+                },
+                {
+                    "clique_size": 2,
+                    "cliques": [
+                        3,
+                        4
+                    ],
+                    "potentials": [
+                        6,
+                        3,
+                        18,
+                        18
+                    ]
+                },
+                {
+                    "clique_size": 2,
+                    "cliques": [
+                        2,
+                        3
+                    ],
+                    "potentials": [
+                        13,
+                        9,
+                        5,
+                        9
+                    ]
+                },
+                {
+                    "clique_size": 2,
+                    "cliques": [
+                        0,
+                        3
+                    ],
+                    "potentials": [
+                        13,
+                        19,
+                        20,
+                        11
+                    ]
+                }
+            ]
+        },
+        "Output": {
+            "Marginals": [
+                [
+                    0.06666477264734443,
+                    0.9333352273526556
+                ],
+                [
+                    0.9310676877427564,
+                    0.06893231225724365
+                ],
+                [
+                    0.5172619230647554,
+                    0.4827380769352446
+                ],
+                [
+                    0.09994094411095861,
+                    0.9000590558890413
+                ],
+                [
+                    0.9500174785464099,
+                    0.04998252145359008
+                ]
+            ],
+            "Top_k_assignments": [
+                {
+                    "assignment": [
+                        1,
+                        0,
+                        1,
+                        1,
+                        0
+                    ],
+                    "probability": 0.3979812560680019
+                },
+                {
+                    "assignment": [
+                        1,
+                        0,
+                        0,
+                        1,
+                        0
+                    ],
+                    "probability": 0.36180114188000173
+                },
+                {
+                    "assignment": [
+                        1,
+                        0,
+                        0,
+                        0,
+                        0
+                    ],
+                    "probability": 0.08833749471091583
+                }
+            ],
+            "Z_value": 542363640666658560
+        }
+    }
+]
