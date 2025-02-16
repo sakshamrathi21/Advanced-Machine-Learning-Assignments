@@ -535,6 +535,7 @@ class Inference:
                         incoming_message = messages[(neighbor, from_clique)]
                         incoming_message_index = 0
                         for j in range(len(incoming_message[0])):
+                            print(incoming_message[0], list_variables_seen, list(incoming_message[0])[len(incoming_message[0]) - 1 - j], list_variables_seen.index(list(incoming_message[0])[len(incoming_message[0]) - 1 - j]))
                             incoming_message_index = incoming_message_index * 2 + assignment[list_variables_seen.index(list(incoming_message[0])[len(incoming_message[0]) - 1 - j])]
                         message_to_send[1][i] *= incoming_message[1][incoming_message_index]
             messages[(from_clique, to_clique)] = message_to_send
