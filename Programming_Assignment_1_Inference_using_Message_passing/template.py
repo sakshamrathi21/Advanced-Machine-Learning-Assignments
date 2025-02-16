@@ -1,9 +1,5 @@
 import json
-import math
 import itertools
-import collections
-import functools
-import random
 import heapq
 import copy
 from itertools import product
