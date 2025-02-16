@@ -556,7 +556,10 @@ class Inference:
             probabilities[i] /= self.z
         assignment_prob_pairs = list(zip(assignments, probabilities))
         assignment_prob_pairs.sort(key=lambda x: -x[1])
-        return assignment_prob_pairs[:self.k_value]
+        new_ass = []
+        for assignment, prob in assignment_prob_pairs:
+            new_ass.append((tuple(reversed(assignment)), prob))
+        return new_ass[:self.k_value]
         
         self.get_z_value()
         num_vars = self.num_variables
@@ -614,6 +617,6 @@ class Get_Input_and_Check_Output:
 
 
 if __name__ == '__main__':
-    evaluator = Get_Input_and_Check_Output('t5.json')
+    evaluator = Get_Input_and_Check_Output('Sample_Testcase.json')
     evaluator.get_output()
     evaluator.write_output('Sample_Testcase_Output.json')
