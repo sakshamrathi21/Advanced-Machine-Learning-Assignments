@@ -64,7 +64,7 @@
 }
 
 % Document title
-\title{\cooltitle{CS726 Scribe Notes}}
+\title{\cooltitle{CS726 Programming Assignment -- 1 Report}}
 \author{
 \textbf{Saksham Rathi (22B1003)}\\
 \textbf{Sharvanee Sonawane (22B0943)}\\
@@ -413,7 +413,8 @@ For any two cliques $C_i$ and $C_j$ containing the same variable $X$, all clique
 \section{Marginal Probability}
 Here is the pseudocode for sharing messages between the maximal cliques of the graph.
 
-Firstly, we show how to calculate the Z value for the given graph.
+\subsection*{Computing the partition function}  
+Firstly, we show how to calculate the Z value for the given graph. So, we first select a root node and then perform a depth-first search (DFS) to calculate the depth of each maximal clique (node in the junction tree). Then, we send messages from the deepest leaves till the root node. Finally, we calculate the partition function using the root clique potential and the received messages. (Messages are being sent again from root to the internal nodes and finally to the leaves, to be used in the next step of computing marginal probabilities.)    
 
 \begin{algorithm}
     \caption{Computation of Partition Function \( Z \)}
@@ -466,9 +467,9 @@ Firstly, we show how to calculate the Z value for the given graph.
     \end{algorithmic}
 \end{algorithm}
 
+\subsection*{Computing the marginal probabilities}
+Here is the pseudocode for computing the marginal probabilities in the graphical model using message passing. We get the partition function \( Z \) from the previous step and use it to normalize the marginal probabilities. We iterate over each variable in the graphical model and find the maximal clique containing it. We then extract the potential function for the clique (using the messages received from neighboring cliques) and compute the marginal probability for the variable. (For every variable, we need to do this only for one clique containing it, as the marginal probability will be the same in all maximal cliques containing the variable.)
 
-
-Here is the pseudocode for computing the marginal probabilities in the graphical model using message passing.
 
 \begin{algorithm}
     \caption{Computation of Marginal Probabilities}
@@ -503,9 +504,15 @@ Here is the pseudocode for computing the marginal probabilities in the graphical
 
 
 
-\clearpage
 
 \section{Finding the Most Probable Assignment}
+Here is the pseudocode for finding the top-K most probable assignments in the graphical model. The value of the partition function \( Z \) is used from the previous step. Similar to the previous step, we do a DFS to calculate the depth of each maximal clique. We then send messages from the deepest leaves to the root node. This time the messages which are being send are of a different format, and they contain the following two values:
+\begin{itemize}
+    \item The union of all sets of variables seen so far (from its descendants and including itself).
+    \item Mapping between the assignments of the variables in the union set, and the corresponding product of potentials.
+\end{itemize}
+
+Moreover, to optimize, we are not sending all the assignments in the message, but only the top-K most probable assignments, where top-K is being performed over all the variables present in the current maximal clique, but not in the descendants. Finally, we send a message from the root node to ``None'', which basically collects the assignments of all the variables in the graphical model. We then normalize the probabilities and return the top-K most probable assignments.
 
 \begin{algorithm}
     \footnotesize
