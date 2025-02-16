@@ -353,6 +353,7 @@ class Inference:
         if self.z != -1:
             return self.z
         junction_tree = self.get_junction_tree()
+        print("Junction Tree", junction_tree)
         # print(junction_tree)
         junction_tree_adj_list = {}
         for edge in junction_tree:
@@ -377,7 +378,7 @@ class Inference:
                     dfs(child, node, depth + 1)
         
         dfs(root, None, 1)
-        
+        print("Depth Map", depth_map)
         def send_message(from_clique, to_clique, parent_map, clique_potentials, messages):
             separator = tuple(sorted(set(from_clique) & set(to_clique)))
             message = [0] * (2 ** len(separator))
@@ -406,7 +407,7 @@ class Inference:
                     parent = [p for p in junction_tree_adj_list[clique] if depth_map[p] == depth - 1]
                     for p in parent:
                         send_message(clique, p, junction_tree_adj_list, clique_potentials, messages)
-
+        print("One round", messages)
         for depth in range(0, max_depth + 1): 
             for clique, d in depth_map.items():
                 if d == depth: 
@@ -521,7 +522,7 @@ class Inference:
             variables_seen = set(from_clique)
             for neighbor in parent_map.get(from_clique, []):
                 if neighbor != to_clique and (neighbor, from_clique) in messages:
-                    variables_seen = variables_seen.union(set(neighbor))
+                    variables_seen = variables_seen.union(set(messages[(neighbor, from_clique)][0]))
             message_to_send = (variables_seen, [1] * (2 ** len(variables_seen)))
             list_variables_seen = list(variables_seen)  
             from_potential = clique_potentials[from_clique][:]
@@ -536,7 +537,6 @@ class Inference:
                         incoming_message = messages[(neighbor, from_clique)]
                         incoming_message_index = 0
                         for j in range(len(incoming_message[0])):
-                            # print(incoming_message[0], list_variables_seen, list(incoming_message[0])[len(incoming_message[0]) - 1 - j], list_variables_seen.index(list(incoming_message[0])[len(incoming_message[0]) - 1 - j]))
                             incoming_message_index = incoming_message_index * 2 + assignment[list_variables_seen.index(list(incoming_message[0])[len(incoming_message[0]) - 1 - j])]
                         message_to_send[1][i] *= incoming_message[1][incoming_message_index]
             messages[(from_clique, to_clique)] = message_to_send
