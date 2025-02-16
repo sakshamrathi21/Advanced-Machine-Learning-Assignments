@@ -511,6 +511,7 @@ class Inference:
                     depth_map[child] = depth
                     dfs(child, node, depth + 1)
         dfs(root, None, 1)
+        
         def send_message(from_clique, to_clique, parent_map, clique_potentials, messages):
             variables_seen = set(from_clique)
             for neighbor in parent_map.get(from_clique, []):
@@ -553,14 +554,6 @@ class Inference:
         assignment_prob_pairs.sort(key=lambda x: -x[1])
         return assignment_prob_pairs[:self.k_value]
         
-
-
-
-
-
-
-
-
         self.get_z_value()
         num_vars = self.num_variables
         assignments = list(product([0, 1], repeat=num_vars))  
