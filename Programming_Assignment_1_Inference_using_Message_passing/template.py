@@ -111,6 +111,19 @@ class Inference:
     maximal_cliques = []
     messages = {}
     clique_potentials = {}
+    def clear(self):
+        self.z = -1
+        self.num_variables = 0
+        self.cliques = []
+        self.edges = []
+        self.potentials = {}
+        self.k_value = 0
+        self.adjacency_matrix = [[]]
+        self.adjacency_list = []
+        self.maximal_clique_potentials = []
+        self.maximal_cliques = []
+        self.messages = {}
+        self.clique_potentials = {}
     def __init__(self, data):
         """
         Initialize the Inference class with the input data.
@@ -127,6 +140,7 @@ class Inference:
         
         Refer to the sample test case for the structure of the input data.
         """
+        self.clear()
         self.num_variables = data['VariablesCount']
         num_cliques = data['Potentials_count']
         # print(data)
@@ -613,6 +627,6 @@ class Get_Input_and_Check_Output:
 
 
 if __name__ == '__main__':
-    evaluator = Get_Input_and_Check_Output('Sample_Testcase.json')
+    evaluator = Get_Input_and_Check_Output('TestCases.json')
     evaluator.get_output()
     evaluator.write_output('Sample_Testcase_Output.json')
