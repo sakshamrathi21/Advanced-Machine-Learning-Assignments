@@ -158,17 +158,15 @@ class Inference:
                     temp.append(j)
             self.adjacency_list.append(temp)
         for i in range(num_cliques):
-            # self.cliques.append(data['Cliques and Potentials'][i]['cliques'])
             clique = tuple(data['Cliques and Potentials'][i]['cliques'])
             new_potentials = data['Cliques and Potentials'][i]['potentials']
             if clique in self.potentials:
-                # Multiply element-wise with the existing potential values
-                self.potentials[clique] = [old * new for old, new in zip(self.potentials[clique], new_potentials)]
+                for j in range(pow(2, data['Cliques and Potentials'][i]['clique_size'])):
+                    self.potentials[clique][j] *= new_potentials[j]
             else:
-                # Assign new potentials if clique does not exist
-                self.potentials[clique] = new_potentials[:]
-            for j in range(pow(2, data['Cliques and Potentials'][i]['clique_size'])):
-                self.potentials[tuple(data['Cliques and Potentials'][i]['cliques'])].append(data['Cliques and Potentials'][i]['potentials'][j])
+                self.potentials[clique] = []
+                for j in range(pow(2, data['Cliques and Potentials'][i]['clique_size'])):
+                    self.potentials[tuple(data['Cliques and Potentials'][i]['cliques'])].append(data['Cliques and Potentials'][i]['potentials'][j])
         self.k_value = data['k value (in top k)']
 
     def get_maximal_cliques(self):
@@ -246,7 +244,7 @@ class Inference:
                     degrees[i] = degree
 
         self.maximal_cliques = self.get_maximal_cliques()       
-
+        # print("Maximal Cliques: ", self.maximal_cliques)
 
 
 
@@ -324,9 +322,10 @@ class Inference:
         for clique in self.maximal_cliques:
             cliques_subsumed = []
             for clique_subsumed in self.cliques:
-                if set(clique).issubset(set(clique_subsumed)) and clique not in cliques_subsumed:
+                # print(set(clique), set(clique_subsumed), set(clique_subsumed).issubset(set(clique)))
+                if set(clique_subsumed).issubset(set(clique)) and clique_subsumed not in cliques_subsumed:
                     cliques_subsumed.append(clique_subsumed)
-            potentials = [1 for i in range(pow(2, len(clique)))]
+            potentials = [1 for _ in range(pow(2, len(clique)))]
             for i in range(len(potentials)):
                 assignment = []
                 for j in range(len(clique)):
@@ -334,11 +333,12 @@ class Inference:
                 for clique_subsumed in cliques_subsumed:
                     index = 0
                     for j in range(len(clique_subsumed)):
-                        index = index * 2 + assignment[clique.index(clique_subsumed[j])]
+                        index = index * 2 + assignment[clique.index(clique_subsumed[len(clique_subsumed) - 1 - j])]
+                    # print(clique_subsumed, clique, assignment, i, index)
+                    
                     potentials[i] *= self.potentials[tuple(clique_subsumed)][index]
             self.maximal_clique_potentials.append(potentials)
-                
-
+        # print(self.maximal_clique_potentials)
     def get_z_value(self):
         """
         Compute the partition function (Z value) of the graphical model.
@@ -353,6 +353,7 @@ class Inference:
         if self.z != -1:
             return self.z
         junction_tree = self.get_junction_tree()
+        # print(junction_tree)
         junction_tree_adj_list = {}
         for edge in junction_tree:
             a = tuple(edge[0])
@@ -396,6 +397,8 @@ class Inference:
 
         messages = {}   
         clique_potentials = {tuple(clique): self.maximal_clique_potentials[i] for i, clique in enumerate(self.maximal_cliques)} 
+        print(clique_potentials)
+        print(self.potentials)
         max_depth = max(depth_map.values())   
         for depth in range(max_depth, -1, -1):
             for clique, d in depth_map.items():
@@ -442,6 +445,7 @@ class Inference:
         """
         clique_potentials = self.clique_potentials
         z_value = self.get_z_value()
+        print(z_value)
         junction_tree = self.get_junction_tree()
         adjacency_list = {}
         for i in range(len(self.maximal_cliques)):
@@ -610,6 +614,6 @@ class Get_Input_and_Check_Output:
 
 
 if __name__ == '__main__':
-    evaluator = Get_Input_and_Check_Output('Sample_Testcase.json')
+    evaluator = Get_Input_and_Check_Output('t1.json')
     evaluator.get_output()
     evaluator.write_output('Sample_Testcase_Output.json')
