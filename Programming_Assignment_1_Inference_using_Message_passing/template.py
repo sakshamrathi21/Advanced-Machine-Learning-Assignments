@@ -45,57 +45,39 @@ def find_cycles(edge_list):
 def whether_triangulated(graph, adjacency_matrix):
     cycles = find_cycles(graph)
     results = [False for i in range(len(cycles))]
-    # print(cycles)
     for cycle in cycles:
         if (len(cycle) < 4):
             results[cycles.index(cycle)] = True
             continue
         for i in range(len(cycle)):
            for j in range(i + 2, len(cycle)):
-                # check if i,j are adjacent in the cycle
                 if i == 0 and j == len(cycle) - 1:
                     continue
                 if adjacency_matrix[cycle[i]][cycle[j]] == 1:
-                    # print(cycle, i, j)
                     results[cycles.index(cycle)] = True
                     break
     if all(results):
         return True
     return False
-
-
-
-
-########################################################################
-
-# Do not install any external packages. You can only use Python's default libraries such as:
-# json, math, itertools, collections, functools, random, heapq, etc.
-
-########################################################################
 
 
 def whether_triangulated(graph, adjacency_matrix):
     cycles = find_cycles(graph)
     results = [False for i in range(len(cycles))]
-    # print(cycles)
     for cycle in cycles:
         if (len(cycle) < 4):
             results[cycles.index(cycle)] = True
             continue
         for i in range(len(cycle)):
            for j in range(i + 2, len(cycle)):
-                # check if i,j are adjacent in the cycle
                 if i == 0 and j == len(cycle) - 1:
                     continue
                 if adjacency_matrix[cycle[i]][cycle[j]] == 1:
-                    # print(cycle, i, j)
                     results[cycles.index(cycle)] = True
                     break
     if all(results):
         return True
     return False
-
-    
 
 
 class Inference:
@@ -143,12 +125,10 @@ class Inference:
         self.clear()
         self.num_variables = data['VariablesCount']
         num_cliques = data['Potentials_count']
-        # print(data)
         for i in range(num_cliques):
             if data['Cliques and Potentials'][i] in self.cliques:
                 continue
             self.cliques.append(data['Cliques and Potentials'][i]['cliques'])
-        # print(self.cliques)
         self.adjacency_matrix = [[0 for i in range(self.num_variables)] for j in range(self.num_variables)]
         for i in self.cliques:
             for j in range(len(i)):
@@ -168,16 +148,12 @@ class Inference:
                     temp.append(j)
             self.adjacency_list.append(temp)
         for i in range(num_cliques):
-            # self.cliques.append(data['Cliques and Potentials'][i]['cliques'])
             clique = tuple(data['Cliques and Potentials'][i]['cliques'])
             new_potentials = data['Cliques and Potentials'][i]['potentials']
             if clique in self.potentials:
-                # Multiply element-wise with the existing potential values
-                # self.potentials[clique] = [old * new for old, new in zip(self.potentials[clique], new_potentials)]
                 for j in range(pow(2, data['Cliques and Potentials'][i]['clique_size'])):
                     self.potentials[clique][j] *= new_potentials[j]
             else:
-                # Assign new potentials if clique does not exist
                 self.potentials[clique] = []
                 for j in range(pow(2, data['Cliques and Potentials'][i]['clique_size'])):
                     self.potentials[tuple(data['Cliques and Potentials'][i]['cliques'])].append(data['Cliques and Potentials'][i]['potentials'][j])
@@ -198,7 +174,7 @@ class Inference:
             X: Nodes that should not be added (avoid duplicates)
             cliques: List to store found cliques
             """
-            if not P and not X:  # Maximal clique found
+            if not P and not X:  
                 cliques.append(R)
                 return
             
@@ -225,13 +201,9 @@ class Inference:
         Refer to the problem statement for details on triangulation and clique extraction.
         """
         if not whether_triangulated(self.edges, self.adjacency_matrix):
-            
             temp_adj_list = [[j for j in i] for i in self.adjacency_list]
-
             degrees = {}
-
             vertices_left = set(range(self.num_variables))
-            
             for i in vertices_left:
                 degree = len(temp_adj_list[i])
                 degrees[i] = degree
@@ -260,10 +232,6 @@ class Inference:
         self.maximal_cliques = self.get_maximal_cliques()       
 
 
-
-
-
-
     def get_junction_tree(self):
         """
         Construct the junction tree from the maximal cliques.
@@ -278,7 +246,6 @@ class Inference:
         """
         tree_edges = []
         maximal_cliques = self.maximal_cliques
-        # maximal_cliques = [[1,2,3], [2,3,4], [3,4,5], [4,5,6]]
         for c1, c2 in itertools.combinations(maximal_cliques, 2):
             intersection_set = set(c1) & set(c2)
             if intersection_set :
@@ -311,7 +278,6 @@ class Inference:
             weight, c1, c2 = heapq.heappop(tree_edges)
             if union(tuple(c1), tuple(c2)):
                 mst.append([c1,c2])
-        # print (mst)
         return mst
                 
 
@@ -328,7 +294,6 @@ class Inference:
         
         Refer to the sample test case for how potentials are associated with cliques.
         """
-        # print(self.maximal_cliques)
         maximal_cliques_copy = []
         for clique in self.maximal_cliques:
             maximal_cliques_copy.append(list(clique))
@@ -440,7 +405,6 @@ class Inference:
         Z = sum(root_potential)
         self.messages = messages
         self.z = Z
-        # print(Z)
         return Z
 
     def compute_marginals(self):
@@ -474,7 +438,6 @@ class Inference:
                 print("ERROR!!!")
                 return
             from_potential = clique_potentials[tuple(m_clique)][:] 
-            # print(self.maximal_cliques, self.messages)
             for nc in self.maximal_cliques:
                 if set(nc) & set(m_clique) and nc != m_clique and (tuple(nc), tuple(m_clique)) in self.messages:
                     separator = tuple(sorted(set(m_clique) & set(nc)))
