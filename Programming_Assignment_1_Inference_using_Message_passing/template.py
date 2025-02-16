@@ -490,6 +490,77 @@ class Inference:
         
         Refer to the sample test case for the expected format of the top-k assignments.
         """
+        junction_tree = self.get_junction_tree()
+        junction_tree_adj_list = {}
+        for edge in junction_tree:
+            a = tuple(edge[0])
+            b = tuple(edge[1])
+            if a not in junction_tree_adj_list:
+                junction_tree_adj_list[a] = [b]
+            else:
+                junction_tree_adj_list[a].append(b)
+            if b not in junction_tree_adj_list:
+                junction_tree_adj_list[b] = [a]
+            else:
+                junction_tree_adj_list[b].append(a)
+        root = tuple(self.maximal_cliques[0])
+        depth_map = {root:0}
+        def dfs(node, parent, depth):
+            for child in junction_tree_adj_list[node]:
+                if child != parent:
+                    depth_map[child] = depth
+                    dfs(child, node, depth + 1)
+        dfs(root, None, 1)
+        def send_message(from_clique, to_clique, parent_map, clique_potentials, messages):
+            variables_seen = set(from_clique)
+            for neighbor in parent_map.get(from_clique, []):
+                if neighbor != to_clique and (neighbor, from_clique) in messages:
+                    variables_seen = variables_seen.union(set(neighbor))
+            message_to_send = (variables_seen, [1] * (2 ** len(variables_seen)))
+            list_variables_seen = list(variables_seen)  
+            from_potential = clique_potentials[from_clique][:]
+            for i in range(len(message_to_send[1])):
+                from_potential_index = 0
+                assignment = [(i >> j) & 1 for j in range(len(variables_seen))]
+                for j in range(len(from_clique)):
+                    from_potential_index = from_potential_index * 2 + assignment[list_variables_seen.index(from_clique[(len(from_clique) - 1) - j])]  
+                message_to_send[1][i] *= from_potential[from_potential_index]
+                for neighbor in parent_map.get(from_clique, []):
+                    if neighbor != to_clique and (neighbor, from_clique) in messages:
+                        incoming_message = messages[(neighbor, from_clique)]
+                        incoming_message_index = 0
+                        for j in range(len(incoming_message[0])):
+                            incoming_message_index = incoming_message_index * 2 + assignment[list_variables_seen.index(list(incoming_message[0])[len(incoming_message[0]) - 1 - j])]
+                        message_to_send[1][i] *= incoming_message[1][incoming_message_index]
+            messages[(from_clique, to_clique)] = message_to_send
+
+        messages = {}
+        clique_potentials = self.clique_potentials
+        max_depth = max(depth_map.values())
+        for depth in range(max_depth, -1, -1):
+            for clique, d in depth_map.items():
+                if d == depth:
+                    parent = [p for p in junction_tree_adj_list[clique] if depth_map[p] == depth - 1]
+                    for p in parent:
+                        send_message(clique, p, junction_tree_adj_list, clique_potentials, messages)
+        send_message(root, None, junction_tree_adj_list, clique_potentials, messages)
+        message_final = messages[(root, None)]
+        assignments = list(product([0, 1], repeat=self.num_variables))
+        probabilities = message_final[1]
+        for i in range(len(probabilities)):
+            probabilities[i] /= self.z
+        assignment_prob_pairs = list(zip(assignments, probabilities))
+        assignment_prob_pairs.sort(key=lambda x: -x[1])
+        return assignment_prob_pairs[:self.k_value]
+        
+
+
+
+
+
+
+
+
         self.get_z_value()
         num_vars = self.num_variables
         assignments = list(product([0, 1], repeat=num_vars))  
