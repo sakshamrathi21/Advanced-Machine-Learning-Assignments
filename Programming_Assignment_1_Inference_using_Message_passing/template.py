@@ -466,7 +466,7 @@ class Inference:
             from_potential = clique_potentials[tuple(m_clique)][:] 
             # print(self.maximal_cliques, self.messages)
             for nc in self.maximal_cliques:
-                if set(nc) & set(m_clique) and nc != m_clique:
+                if set(nc) & set(m_clique) and nc != m_clique and (tuple(nc), tuple(m_clique)) in self.messages:
                     separator = tuple(sorted(set(m_clique) & set(nc)))
                     incoming_message = self.messages[(tuple(nc), tuple(m_clique))]
                     for ci in range(len(from_potential)):
