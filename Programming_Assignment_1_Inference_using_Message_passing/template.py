@@ -567,14 +567,19 @@ class Inference:
         dfs(root, None, 1)
         
         def send_message(from_clique, to_clique, parent_map, clique_potentials, messages):
+            set_neighbor_variables = set()
             variables_seen = set(from_clique)  # current set of variables encountered in the process of joint probability computation
             # Consider messages received from other neighboring cliques
             for neighbor in parent_map.get(from_clique, []): 
                 if neighbor != to_clique and (neighbor, from_clique) in messages:
                     variables_seen = variables_seen.union(set(messages[(neighbor, from_clique)][0]))
+                    set_neighbor_variables = set_neighbor_variables.union(set(messages[(neighbor, from_clique)][0]))
                     
             # Initialize message to be sent
-            message_to_send = (variables_seen, [1] * (2 ** len(variables_seen)))
+            message_to_send = (variables_seen, {})
+            for i in range(2 ** len(variables_seen)):
+                message_to_send[1][i] = 1
+            # message_to_send = (variables_seen, [1] * (2 ** len(variables_seen)))
             list_variables_seen = list(variables_seen)  
             from_potential = clique_potentials[from_clique][:]
             # Compute message values for each assignment
@@ -595,9 +600,34 @@ class Inference:
                         incoming_message_index = 0
                         for j in range(len(incoming_message[0])):
                             incoming_message_index = incoming_message_index * 2 + assignment[list_variables_seen.index(list(incoming_message[0])[len(incoming_message[0]) - 1 - j])]
-                        message_to_send[1][i] *= incoming_message[1][incoming_message_index]
+                        if incoming_message_index in incoming_message[1]:
+                            message_to_send[1][i] *= incoming_message[1][incoming_message_index]
             # Store the computed message
-            messages[(from_clique, to_clique)] = message_to_send
+            # Instead of sending the entire message, we only send the top-k assignments with the highest probabilities
+            variables_extra = set(from_clique) - set_neighbor_variables
+            # print("Extra variables", variables_extra)
+            if pow(2, len(variables_extra)) < self.k_value*pow(2, len(variables_seen)):
+                messages[(from_clique, to_clique)] = message_to_send
+            else:
+                # Sort the assignments by probability in descending order
+                assignment_prob_pairs = list(zip(list(product([0, 1], repeat=len(variables_extra))), message_to_send[1]))
+                assignment_prob_pairs.sort(key=lambda x: -x[1])
+                top_k_variable_extra_assignments = []
+                final_assignments = {}
+                for assignment, prob in assignment_prob_pairs:
+                    # first we need to find the assignment corresponding to the variables_extra
+                    new_assignment= [0] * len(variables_extra)
+                    for i in range(len(variables_extra)):
+                        new_assignment[i] = assignment[list(variables_extra).index(list(variables_extra)[i])]
+                    if new_assignment not in top_k_variable_extra_assignments and len(top_k_variable_extra_assignments) < self.k_value:
+                        top_k_variable_extra_assignments.append((tuple(new_assignment), prob))
+                    if new_assignment in top_k_variable_extra_assignments:
+                        final_assignments[assignment] = prob
+                if len(top_k_variable_extra_assignments) < self.k_value:
+                    print("ERROR")
+                messages[(from_clique, to_clique)] = (variables_seen, final_assignments)
+                
+                
 
         messages = {}
         clique_potentials = self.clique_potentials
@@ -614,7 +644,10 @@ class Inference:
         # Send final message from root to compute marginal probabilities
         send_message(root, None, junction_tree_adj_list, clique_potentials, messages)
         message_final = messages[(root, None)]
-
+        message_final_adapted = (message_final[0], [0]*pow(2, len(message_final[0])))
+        for assignment, prob in message_final[1].items():
+            message_final_adapted[1][assignment] = prob
+        message_final = message_final_adapted
         # Compute normalized probabilities
         assignments = list(product([0, 1], repeat=self.num_variables)) # All possible binary assignments
         probabilities = message_final[1]
