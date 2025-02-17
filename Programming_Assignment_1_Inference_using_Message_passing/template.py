@@ -629,6 +629,7 @@ class Inference:
                 if len(top_k_variable_extra_assignments) < self.k_value:
                     print("ERROR")
                 messages[(from_clique, to_clique)] = (variables_seen, final_assignments)
+                # print(final_assignments)
                 
                 
 
