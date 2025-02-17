@@ -146,7 +146,7 @@ The figure below shows the run of the triangulation algorithm on an example grap
     \end{scope}
 
     % Step 2: Pick vertex 1, connect 5-2, then remove 1 (First row, second column)
-    \begin{scope}[xshift=6cm]
+    \begin{scope}[xshift=5.5cm]
         \node[draw, circle, inner sep=2pt] (1b) at (0,2) {1};
         \node[draw, circle, inner sep=2pt] (2b) at (2,3) {2};
         \node[draw, circle, inner sep=2pt] (3b) at (4,2) {3};
@@ -160,7 +160,7 @@ The figure below shows the run of the triangulation algorithm on an example grap
         \draw[dashed] (1b) -- (2b); % Added edge
         \draw[dashed] (1b) -- (5b); % Added edge
 
-        \node at (2,-1) {Step 2: Select 1, add (5,2), remove 1};
+        \node at (2,-1) {\small Step 2: Select 1, add (5,2), remove 1};
     \end{scope}
 
     % Step 3: Pick vertex 5, connect 4-2, then remove 5 (First row, third column)
