@@ -603,12 +603,10 @@ class Inference:
                         if incoming_message_index in incoming_message[1]:
                             message_to_send[1][i] *= incoming_message[1][incoming_message_index]
             # Store the computed message
-            # Instead of sending the entire message, we only send the top-k assignments with the highest probabilities
             if to_clique is not None:
                 variables_extra = set(from_clique) - set(set_neighbor_variables)
             else:
                 variables_extra = set(from_clique)
-            # for each possible assignments of the extra variables, we need to just store the top-k assignments of all other variables
             list_neighboring_variables = list(set_neighbor_variables)
             if variables_extra != set():
                 final_message = {}
@@ -625,7 +623,6 @@ class Inference:
                         for k in range(len(variables_seen)):
                             index = index * 2 + assignment[len(variables_seen) - 1 - k]
                         assignment_potential_pairs[index] = message_to_send[1][index]
-                    # sort the assignments by probability in descending order, and store only the top-k assignments
                     assignment_prob_pairs = list(assignment_potential_pairs.items())
                     assignment_prob_pairs.sort(key=lambda x: -x[1])
                     top_k_assignments = {}
