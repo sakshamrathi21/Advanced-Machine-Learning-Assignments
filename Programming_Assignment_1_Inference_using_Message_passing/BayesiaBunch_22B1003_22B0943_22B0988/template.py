@@ -604,7 +604,10 @@ class Inference:
                             message_to_send[1][i] *= incoming_message[1][incoming_message_index]
             # Store the computed message
             # Instead of sending the entire message, we only send the top-k assignments with the highest probabilities
-            variables_extra = set(from_clique) - set_neighbor_variables
+            if to_clique is not None:
+                variables_extra = set(from_clique) - set(to_clique)
+            else:
+                variables_extra = set()
             # print("Extra variables", variables_extra)
             if pow(2, len(variables_extra)) < self.k_value*pow(2, len(variables_seen)):
                 messages[(from_clique, to_clique)] = message_to_send
@@ -626,6 +629,7 @@ class Inference:
                 if len(top_k_variable_extra_assignments) < self.k_value:
                     print("ERROR")
                 messages[(from_clique, to_clique)] = (variables_seen, final_assignments)
+                # print(final_assignments)
                 
                 
 
@@ -717,6 +721,6 @@ class Get_Input_and_Check_Output:
 
 
 if __name__ == '__main__':
-    evaluator = Get_Input_and_Check_Output('Sample_Testcase.json')
+    evaluator = Get_Input_and_Check_Output('TestCases.json')
     evaluator.get_output()
     evaluator.write_output('Sample_Testcase_Output.json')
