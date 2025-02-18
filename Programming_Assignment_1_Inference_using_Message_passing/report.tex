@@ -514,85 +514,59 @@ Here is the pseudocode for finding the top-K most probable assignments in the gr
 
 Moreover, to optimize, we are not sending all the assignments in the message, but only the top-K most probable assignments, where top-K is being performed over all the variables present in the current maximal clique, but not in the descendants. Finally, we send a message from the root node to ``None'', which basically collects the assignments of all the variables in the graphical model. We then normalize the probabilities and return the top-K most probable assignments.
 
+
+
 \begin{algorithm}
-    \footnotesize
-    \caption{Compute Top-K Most Probable Assignments}
+    \caption{Compute the Top-K Most Probable Assignments in the Graphical Model}
     \begin{algorithmic}[1]
-    \Procedure{ComputeTopK}{ }
-    \State $junction\_tree \gets$ GetJunctionTree()
-    \State $junction\_tree\_adj\_list \gets \emptyset$
-    \For{each $edge$ in $junction\_tree$}
-    \State $(a, b) \gets edge$
-    \State Add $b$ to $junction\_tree\_adj\_list[a]$
-    \State Add $a$ to $junction\_tree\_adj\_list[b]$
+    \State $junction_tree \gets$ getJunctionTree()
+    \State $junction\_tree\_adj\_list \gets {}$
+    \For{each edge $(a, b)$ in $junction\_tree$}
+    \State $junction\_tree\_adj\_list[a] \gets junction\_tree\_adj\_list[a] \cup {b}$
+    \State $junction\_tree\_adj\_list[b] \gets junction\_tree\_adj\_list[b] \cup {a}$
     \EndFor
-    \State $root \gets$ tuple of maximal cliques[0]
-\State $depth\_map[root] \gets 0$
-
-\Procedure{DFS}{$node, parent, depth$}
+    \State $root \gets$ select a maximal clique as root
+    \State $depth\_map[root] \gets 0$
+    \Procedure{DFS}{$node, parent, depth$}
     \For{each $child$ in $junction\_tree\_adj\_list[node]$}
-        \If{$child \neq parent$}
-            \State $depth\_map[child] \gets depth$
-            \State \Call{DFS}{$child, node, depth+1$}
-        \EndIf
+    \If{$child \neq parent$}
+    \State $depth\_map[child] \gets depth$
+    \State \Call{DFS}{$child, node, depth + 1$}
+    \EndIf
     \EndFor
-\EndProcedure
-\State \Call{DFS}{$root, \text{None}, 1$}
-
-\Procedure{SendMessage}{$from\_clique, to\_clique, parent\_map, clique\_potentials, messages$}
-    \State $variables\_seen \gets$ Set of variables in $from\_clique$
-    \For{each $neighbor$ in $parent\_map[from\_clique]$}
-        \If{$neighbor \neq to\_clique$ and $(neighbor, from\_clique) \in messages$}
-            \State $variables\_seen \gets variables\_seen \cup neighbor$
-        \EndIf
-    \EndFor
-    \State Initialize $message\_to\_send$ with ones of size $2^{|variables\_seen|}$
-    \State Convert $variables\_seen$ to list $list\_variables\_seen$
-    \State $from\_potential \gets clique\_potentials[from\_clique]$
-    
-    \For{each $i$ in range $2^{|variables\_seen|}$}
-        \State Compute binary assignment for $i$
-        \State Compute $from\_potential\_index$ based on $from\_clique$
-        \State Multiply $message\_to\_send[i]$ by $from\_potential[from\_potential\_index]$
+    \EndProcedure
+    \State \Call{DFS}{$root, \text{None}, 1$}
+    \Procedure{SendMessage}{$from\_clique, to\_clique, parent\_map, clique\_potentials, messages$}
+        \State $variables\_seen \gets$ all variables in $from\_clique$
         \For{each $neighbor$ in $parent\_map[from\_clique]$}
             \If{$neighbor \neq to\_clique$ and $(neighbor, from\_clique) \in messages$}
-                \State Multiply $message\_to\_send[i]$ by incoming message
+                \State $variables\_seen \gets variables\_seen \cup$ variables in $messages[(neighbor, from\_clique)]$
             \EndIf
         \EndFor
-    \EndFor
-    \State $messages[(from\_clique, to\_clique)] \gets message\_to\_send$
-\EndProcedure
+        \State Initialize $message\_to\_send$ with all entries set to 1
+        \For{each possible assignment in $message\_to\_send$}
+            \State Compute index in $from\_potential$
+            \State Multiply with clique potential and incoming messages
+        \EndFor
+        \State Store message in $messages[(from\_clique, to\_clique)]$
+    \EndProcedure
 
-\State $messages \gets \emptyset$
-\State $clique\_potentials \gets self.clique\_potentials$
-\State $max\_depth \gets \max(depth\_map.values())$
-
-\For{depth from $max\_depth$ to $0$}
-    \For{each $(clique, d)$ in $depth\_map$}
-        \If{$d == depth$}
-            \State Find parent $p$ of $clique$
-            \For{each $p$}
+    \State $messages \gets \{\}$
+    \State $clique\_potentials \gets$ getCliquePotentials()
+    \State $max\_depth \gets$ max depth in $depth\_map$
+    \For{$depth = max\_depth$ to $0$}
+        \For{each clique with depth $d = depth$}
+            \State Identify parent clique(s)
+            \For{each parent $p$}
                 \State \Call{SendMessage}{$clique, p, junction\_tree\_adj\_list, clique\_potentials, messages$}
             \EndFor
-        \EndIf
+        \EndFor
     \EndFor
-\EndFor
-
-\State \Call{SendMessage}{$root, \text{None}, junction\_tree\_adj\_list, clique\_potentials, messages$}
-\State $message\_final \gets messages[(root, None)]$
-\State $assignments \gets$ all possible binary assignments of size $num\_variables$
-\State $probabilities \gets message\_final[1]$
-\For{each $i$ in $probabilities$}
-    \State $probabilities[i] \gets probabilities[i] / self.z$
-\EndFor
-\State $assignment\_prob\_pairs \gets$ Zip(assignments, probabilities)
-\State Sort $assignment\_prob\_pairs$ in decreasing order of probability
-\State \Return first $k\_value$ elements of $assignment\_prob\_pairs$
-\EndProcedure
+    \State \Call{SendMessage}{$root, \text{None}, junction\_tree\_adj\_list, clique\_potentials, messages$}
+    \State Normalize probabilities and sort assignments
+    \State \Return top-$k$ assignments
 \end{algorithmic}
 \end{algorithm}
-    
-
 
 
 \end{document}
