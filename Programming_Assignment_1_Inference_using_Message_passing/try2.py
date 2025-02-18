@@ -227,7 +227,6 @@ class Inference:
         # if the graph is already triangulated, no need to triangulate
         if not whether_triangulated(self.edges, self.adjacency_matrix):
             # add edges to make the graph chordal
-
             temp_adj_list = [[j for j in i] for i in self.adjacency_list]   # deep copy that we can remove vertices from
             degrees = {}
 
@@ -372,6 +371,7 @@ class Inference:
         """
         if self.z != -1:
             return self.z
+        print(self.maximal_cliques)
         junction_tree = self.get_junction_tree() 
         junction_tree_adj_list = {} # create adjacency list for the junction tree
         for edge in junction_tree:
