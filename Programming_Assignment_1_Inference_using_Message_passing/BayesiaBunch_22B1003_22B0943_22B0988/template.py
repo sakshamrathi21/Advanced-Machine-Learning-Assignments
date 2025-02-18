@@ -603,11 +603,41 @@ class Inference:
                         if incoming_message_index in incoming_message[1]:
                             message_to_send[1][i] *= incoming_message[1][incoming_message_index]
             # Store the computed message
-            # Instead of sending the entire message, we only send the top-k assignments with the highest probabilities
             if to_clique is not None:
-                variables_extra = set(from_clique) - set(to_clique)
+                variables_extra = set(from_clique) - set(set_neighbor_variables)
             else:
-                variables_extra = set()
+                variables_extra = set(from_clique)
+            list_neighboring_variables = list(set_neighbor_variables)
+            if variables_extra != set():
+                final_message = {}
+                for i in range(pow(2, len(variables_extra))):
+                    assignment_potential_pairs ={}
+                    for j in range(pow(2, len(list_neighboring_variables))):
+                        assignment = [0] * len(variables_seen)
+                        index = 0
+                        for k in range(len(variables_seen)):
+                            if list(variables_seen)[k] in list_neighboring_variables:
+                                assignment[k] = (j >> list_neighboring_variables.index(list(variables_seen)[k])) & 1
+                            else:
+                                assignment[k] = (i >> list(variables_extra).index(list(variables_seen)[k])) & 1
+                        for k in range(len(variables_seen)):
+                            index = index * 2 + assignment[len(variables_seen) - 1 - k]
+                        assignment_potential_pairs[index] = message_to_send[1][index]
+                    assignment_prob_pairs = list(assignment_potential_pairs.items())
+                    assignment_prob_pairs.sort(key=lambda x: -x[1])
+                    top_k_assignments = {}
+                    for assignment, prob in assignment_prob_pairs:
+                        if len(top_k_assignments) < self.k_value:
+                            top_k_assignments[assignment] = prob
+                            final_message[assignment] = prob
+                message_to_send = (variables_seen, final_message)
+                    
+
+                    
+
+
+
+
             # print("Extra variables", variables_extra)
             if pow(2, len(variables_extra)) < self.k_value*pow(2, len(variables_seen)):
                 messages[(from_clique, to_clique)] = message_to_send
@@ -629,7 +659,6 @@ class Inference:
                 if len(top_k_variable_extra_assignments) < self.k_value:
                     print("ERROR")
                 messages[(from_clique, to_clique)] = (variables_seen, final_assignments)
-                # print(final_assignments)
                 
                 
 
