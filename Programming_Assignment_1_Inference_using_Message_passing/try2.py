@@ -371,7 +371,7 @@ class Inference:
         """
         if self.z != -1:
             return self.z
-        print(self.maximal_cliques)
+        # print(self.maximal_cliques)
         junction_tree = self.get_junction_tree() 
         junction_tree_adj_list = {} # create adjacency list for the junction tree
         for edge in junction_tree:
@@ -750,6 +750,6 @@ class Get_Input_and_Check_Output:
 
 
 if __name__ == '__main__':
-    evaluator = Get_Input_and_Check_Output('/Users/sakshamrathi/Downloads/Sample_Testcase.json')
+    evaluator = Get_Input_and_Check_Output('Sample_Testcase2.json')
     evaluator.get_output()
     evaluator.write_output('Sample_Testcase_Output.json')
