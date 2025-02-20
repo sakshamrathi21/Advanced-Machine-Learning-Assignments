@@ -523,14 +523,14 @@ Finally, we send a message from the root node to ``None'', which basically colle
     \State \textbf{Input:} Graphical model with junction tree, clique potentials, $k$ value
     \State \textbf{Output:} Top-$k$ assignments with highest probabilities
     
-    \State $junction_tree \gets$ get the junction tree
-    \State Initialize $junction_tree_adj_list$ as empty dictionary
-    \For{each edge $(a, b)$ in $junction_tree$}
+    \State $junction\_tree \gets$ get the junction tree
+    \State Initialize $junction\_tree\_adj\_list$ as empty dictionary
+    \For{each edge $(a, b)$ in $junction\_tree$}
     \State Add $b$ to adjacency list of $a$ and vice versa
     \EndFor
     
     \State $root \gets$ any maximal clique as the root
-    \State Initialize $depth_map$ with $root$ having depth $0$
+    \State Initialize $depth\_map$ with $root$ having depth $0$
     \Procedure{DFS}{$node, parent, depth$}
     \For{each child in adjacency list of $node$}
     \If{child $\neq$ parent}
@@ -540,7 +540,7 @@ Finally, we send a message from the root node to ``None'', which basically colle
     \EndProcedure
     \State Call DFS($root, \text{None}, 1$)
     
-    \Procedure{SendMessage}{$from_clique, to_clique, parent_map, clique_potentials, messages$}
+    \Procedure{SendMessage}{$from\_clique, to\_clique, parent\_map, clique\_potentials, messages$}
     \State Compute variables seen and neighboring variables
     \State Initialize message with uniform probability distribution
     \For{each assignment in possible values of seen variables}
@@ -552,10 +552,10 @@ Finally, we send a message from the root node to ``None'', which basically colle
     \EndProcedure
     
     \State Initialize $messages$ as an empty dictionary
-    \State $clique_potentials \gets$ get clique potentials
-    \State $max_depth \gets$ maximum depth in $depth_map$
+    \State $clique\_potentials \gets$ get clique potentials
+    \State $max\_depth \gets$ maximum depth in $depth\_map$
     
-    \For{$depth = max_depth$ down to $0$}
+    \For{$depth = max\_depth$ down to $0$}
     \For{each clique at depth $depth$}
     \State Identify parent cliques
     \For{each parent clique}
@@ -565,7 +565,7 @@ Finally, we send a message from the root node to ``None'', which basically colle
     \EndFor
     
     \State Call SendMessage with $(root, \text{None}, ...)$
-    \State $message_final \gets$ computed message from root
+    \State $message\_final \gets$ computed message from root
     \State Normalize probabilities using partition function $Z$
     
     \State Sort assignments by probability in descending order
