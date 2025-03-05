@@ -81,10 +81,7 @@ class DDPM(nn.Module):
             torch.Tensor, the predicted noise tensor [batch_size, n_dim]
         """
         t_emb = self.time_embed(t.unsqueeze(1).float())
-        # print(x, t_emb)
-        # print(x.shape, t_emb.shape)
         x = torch.cat([x, t_emb], dim=-1)
-        # print(x.shape)
         return self.model(x)
 
 class ConditionalDDPM():
@@ -120,7 +117,6 @@ def train(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
         run_name: str, path to save the model
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # print(device)
     model = model.to(device)
     model.train()
     loss_fn = nn.MSELoss()
@@ -129,15 +125,11 @@ def train(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
         epoch_loss = 0
         progress_bar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{epochs}", leave=False)
         for x in progress_bar:
-            # print(x)
             x = x[0].to(device)
-            # print(x.shape)
             t = torch.randint(0, noise_scheduler.num_timesteps, (x.shape[0],), device=device)
             noise = torch.randn_like(x, device=device)
-            # print(noise.shape)
             alpha_bar_t = noise_scheduler.alpha_bar[t].view(-1, 1)
             alpha_bar_t = alpha_bar_t.to(device)
-            # print("Hello", noise_scheduler.alpha_bar[t].shape)
             x_t = torch.sqrt(alpha_bar_t) * x + torch.sqrt(1 - alpha_bar_t) * noise
             pred = model(x_t, t)
             loss = loss_fn(pred, x) 
@@ -274,8 +266,12 @@ if __name__ == "__main__":
         data_X, data_y = dataset.load_dataset(args.dataset)
         # can split the data into train and test -- for evaluation later
         data_X = data_X.to(device)
-        data_y = data_y.to(device)
-        dataloader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(data_X, data_y), batch_size=args.batch_size, shuffle=True)
+        if data_y != None:
+            data_y = data_y.to(device)
+        if data_y == None:
+            dataloader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(data_X), batch_size=args.batch_size, shuffle=True)
+        else:
+            dataloader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(data_X, data_y), batch_size=args.batch_size, shuffle=True)
         train(model, noise_scheduler, dataloader, optimizer, epochs, run_name)
 
     elif args.mode == 'sample':
