@@ -80,8 +80,11 @@ class DDPM(nn.Module):
         Returns:
             torch.Tensor, the predicted noise tensor [batch_size, n_dim]
         """
-        t_emb = self.time_embed(t.unsqueeze(1).float())  # Convert t to an embedding
-        x = torch.cat([x, t_emb], dim=-1)  # Concatenate time embedding
+        t_emb = self.time_embed(t.unsqueeze(1).float())
+        # print(x, t_emb)
+        # print(x.shape, t_emb.shape)
+        x = torch.cat([x, t_emb], dim=-1)
+        # print(x.shape)
         return self.model(x)
 
 class ConditionalDDPM():
@@ -117,6 +120,7 @@ def train(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
         run_name: str, path to save the model
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(device)
     model = model.to(device)
     model.train()
     loss_fn = nn.MSELoss()
@@ -125,10 +129,15 @@ def train(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
         epoch_loss = 0
         progress_bar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{epochs}", leave=False)
         for x in progress_bar:
-            x = x.to(device)
+            # print(x)
+            x = x[0].to(device)
+            # print(x.shape)
             t = torch.randint(0, noise_scheduler.num_timesteps, (x.shape[0],), device=device)
             noise = torch.randn_like(x, device=device)
-            alpha_bar_t = noise_scheduler.alpha_bar[t].view(-1, 1, 1, 1)
+            # print(noise.shape)
+            alpha_bar_t = noise_scheduler.alpha_bar[t].view(-1, 1)
+            alpha_bar_t = alpha_bar_t.to(device)
+            # print("Hello", noise_scheduler.alpha_bar[t].shape)
             x_t = torch.sqrt(alpha_bar_t) * x + torch.sqrt(1 - alpha_bar_t) * noise
             predicted_noise = model(x_t, t)
             loss = loss_fn(predicted_noise, noise) 
@@ -140,6 +149,21 @@ def train(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
         avg_epoch_loss = epoch_loss / len(dataloader)
         loss_history.append(avg_epoch_loss)
         print(f"Epoch {epoch+1}/{epochs} Loss: {avg_epoch_loss}")
+
+    os.makedirs(run_name, exist_ok=True)
+    model_path = os.path.join(run_name, "ddpm_model.pth")
+    torch.save(model.state_dict(), model_path)
+    print(f"Model saved to {model_path}")
+
+    # Plot loss curve
+    plt.figure(figsize=(10, 5))
+    plt.plot(range(1, epochs + 1), loss_history, marker="o", linestyle="-")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.title("Training Loss Curve")
+    plt.grid(True)
+    plt.savefig(os.path.join(run_name, "loss_curve.png"))
+    plt.show()
 
 
 
