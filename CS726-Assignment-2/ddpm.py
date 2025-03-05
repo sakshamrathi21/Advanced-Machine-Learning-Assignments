@@ -70,8 +70,6 @@ class DDPM(nn.Module):
             nn.ReLU(),
             nn.Linear(128, n_dim)
         )
-        self.time_embed = None
-        self.model = None
 
     def forward(self, x, t):
         """
@@ -118,6 +116,34 @@ def train(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
         epochs: int, number of epochs to train the model
         run_name: str, path to save the model
     """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
+    model.train()
+    loss_fn = nn.MSELoss()
+    loss_history = []
+    for epoch in range(epochs):
+        epoch_loss = 0
+        progress_bar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{epochs}", leave=False)
+        for x in progress_bar:
+            x = x.to(device)
+            t = torch.randint(0, noise_scheduler.num_timesteps, (x.shape[0],), device=device)
+            noise = torch.randn_like(x, device=device)
+            alpha_bar_t = noise_scheduler.alpha_bar[t].view(-1, 1, 1, 1)
+            x_t = torch.sqrt(alpha_bar_t) * x + torch.sqrt(1 - alpha_bar_t) * noise
+            predicted_noise = model(x_t, t)
+            loss = loss_fn(predicted_noise, noise) 
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            epoch_loss += loss.item()
+            progress_bar.set_postfix(loss=loss.item())
+        avg_epoch_loss = epoch_loss / len(dataloader)
+        loss_history.append(avg_epoch_loss)
+        print(f"Epoch {epoch+1}/{epochs} Loss: {avg_epoch_loss}")
+
+
+
+
 
 @torch.no_grad()
 def sample(model, n_samples, noise_scheduler, return_intermediate=False): 
