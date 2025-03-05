@@ -139,8 +139,8 @@ def train(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
             alpha_bar_t = alpha_bar_t.to(device)
             # print("Hello", noise_scheduler.alpha_bar[t].shape)
             x_t = torch.sqrt(alpha_bar_t) * x + torch.sqrt(1 - alpha_bar_t) * noise
-            predicted_noise = model(x_t, t)
-            loss = loss_fn(predicted_noise, noise) 
+            pred = model(x_t, t)
+            loss = loss_fn(pred, x) 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()

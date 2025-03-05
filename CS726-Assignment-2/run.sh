@@ -1,1 +1,1 @@
-python3 ddpm.py --mode 'sample' --n_steps 1000 --lbeta 1 --ubeta 2 --epochs 10 --n_samples 100 --batch_size 10 --lr 5 --n_dim 2 --dataset moons    
+python3 ddpm.py --mode 'train' --n_steps 100 --lbeta 0 --ubeta 0.5 --epochs 50 --n_samples 10000 --batch_size 100 --lr 0.1 --n_dim 2 --dataset albatross
