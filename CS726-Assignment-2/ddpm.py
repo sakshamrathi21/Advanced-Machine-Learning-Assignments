@@ -163,10 +163,6 @@ def train(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
     plt.title("Training Loss Curve")
     plt.grid(True)
     plt.savefig(os.path.join(run_name, "loss_curve.png"))
-    plt.show()
-
-
-
 
 
 @torch.no_grad()
