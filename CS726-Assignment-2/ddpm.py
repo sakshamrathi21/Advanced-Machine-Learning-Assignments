@@ -188,8 +188,31 @@ def sample(model, n_samples, noise_scheduler, return_intermediate=False):
         the function returns all the intermediate steps in the diffusion process as well 
         Return: [[n_samples, n_dim]] x n_steps
         Optionally implement return_intermediate=True, will aid in visualizing the intermediate steps
-    """   
-    pass
+    """ 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    n_dim = model.n_dim
+    x_t = torch.randn((n_samples, n_dim), device=device)  # Start from Gaussian noise
+    intermediate_steps = [] if return_intermediate else None
+    
+    for t in reversed(range(noise_scheduler.num_timesteps)):
+        t_tensor = torch.full((n_samples,), t, device=device, dtype=torch.long)
+        noise_pred = model(x_t, t_tensor)
+        alpha_bar_t = noise_scheduler.alpha_bar[t]
+        alpha_t = noise_scheduler.alphas[t]
+        beta_t = noise_scheduler.betas[t]
+        
+        mean = (1 / torch.sqrt(alpha_t)) * (x_t - ((1 - alpha_t) / torch.sqrt(1 - alpha_bar_t)) * noise_pred)
+        if t > 0:
+            noise = torch.randn_like(x_t, device=device)
+            std = torch.sqrt(beta_t)
+            x_t = mean + std * noise
+        else:
+            x_t = mean
+        
+        if return_intermediate:
+            intermediate_steps.append(x_t.clone().detach())
+    
+    return (x_t if not return_intermediate else intermediate_steps)
 
 def sampleCFG(model, n_samples, noise_scheduler, guidance_scale, class_label):
     """

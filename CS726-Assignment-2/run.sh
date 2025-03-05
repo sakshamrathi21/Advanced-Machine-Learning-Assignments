@@ -1,0 +1,1 @@
+python3 ddpm.py --mode 'sample' --n_steps 200 --lbeta 1 --ubeta 2 --epochs 100 --n_samples 100 --batch_size 10 --lr 5 --n_dim 2 --dataset moons    
