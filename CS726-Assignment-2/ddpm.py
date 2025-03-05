@@ -151,7 +151,7 @@ def train(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
         print(f"Epoch {epoch+1}/{epochs} Loss: {avg_epoch_loss}")
 
     os.makedirs(run_name, exist_ok=True)
-    model_path = os.path.join(run_name, "ddpm_model.pth")
+    model_path = os.path.join(run_name, "/model.pth")
     torch.save(model.state_dict(), model_path)
     print(f"Model saved to {model_path}")
 
