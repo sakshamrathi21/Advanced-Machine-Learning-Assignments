@@ -120,7 +120,7 @@ def train(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
         run_name: str, path to save the model
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(device)
+    # print(device)
     model = model.to(device)
     model.train()
     loss_fn = nn.MSELoss()
@@ -151,7 +151,7 @@ def train(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
         print(f"Epoch {epoch+1}/{epochs} Loss: {avg_epoch_loss}")
 
     os.makedirs(run_name, exist_ok=True)
-    model_path = os.path.join(run_name, "/model.pth")
+    model_path = os.path.join(run_name, "model.pth")
     torch.save(model.state_dict(), model_path)
     print(f"Model saved to {model_path}")
 
