@@ -39,8 +39,8 @@ class NoiseScheduler():
         """
 
         self.betas = torch.linspace(beta_start, beta_end, self.num_timesteps, dtype=torch.float32)
-
-        self.alphas = None
+        self.alphas = 1.0 - self.betas
+        self.alpha_bar = torch.cumprod(self.alphas, 0)
 
     def __len__(self):
         return self.num_timesteps
@@ -56,6 +56,20 @@ class DDPM(nn.Module):
         We have separate learnable modules for `time_embed` and `model`. `time_embed` can be learned or a fixed function as well
 
         """
+        super().__init__()
+        self.n_dim = n_dim
+        self.n_steps = n_steps
+        self.time_embed = nn.Sequential(
+            nn.Linear(1, 32),
+            nn.ReLU(),
+            nn.Linear(32, 64),
+            nn.ReLU(),
+        )
+        self.model = nn.Sequential(
+            nn.Linear(n_dim + 64, 128),
+            nn.ReLU(),
+            nn.Linear(128, n_dim)
+        )
         self.time_embed = None
         self.model = None
 
@@ -68,7 +82,9 @@ class DDPM(nn.Module):
         Returns:
             torch.Tensor, the predicted noise tensor [batch_size, n_dim]
         """
-        pass
+        t_emb = self.time_embed(t.unsqueeze(1).float())  # Convert t to an embedding
+        x = torch.cat([x, t_emb], dim=-1)  # Concatenate time embedding
+        return self.model(x)
 
 class ConditionalDDPM():
     pass
