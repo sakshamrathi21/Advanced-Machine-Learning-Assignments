@@ -9,44 +9,243 @@ import utils
 import dataset
 import os
 import matplotlib.pyplot as plt
+import math
 
-
-class BasicUNet(nn.Module):
-    """A minimal UNet implementation."""
-    def __init__(self, in_channels=1, out_channels=1):
+class SinusoidalPositionEmbeddings(nn.Module):
+    """
+    Sinusoidal time embedding for the DDPM model
+    """
+    def __init__(self, dim):
         super().__init__()
-        self.down_layers = torch.nn.ModuleList([ 
-            nn.Conv2d(in_channels, 32, kernel_size=5, padding=2),
-            nn.Conv2d(32, 64, kernel_size=5, padding=2),
-            nn.Conv2d(64, 64, kernel_size=5, padding=2),
-        ])
-        self.up_layers = torch.nn.ModuleList([
-            nn.Conv2d(64, 64, kernel_size=5, padding=2),
-            nn.Conv2d(64, 32, kernel_size=5, padding=2),
-            nn.Conv2d(32, out_channels, kernel_size=5, padding=2), 
-        ])
-        self.act = nn.SiLU() # The activation function
-        self.downscale = nn.MaxPool2d(2)
-        self.upscale = nn.Upsample(scale_factor=2)
+        self.dim = dim
 
-    def forward(self, x):
-        h = []
-        for i, l in enumerate(self.down_layers):
-            x = self.act(l(x)) # Through the layer and the activation function
-            if i < 2: # For all but the third (final) down layer:
-              h.append(x) # Storing output for skip connection
-              x = self.downscale(x) # Downscale ready for the next layer
-              
-        for i, l in enumerate(self.up_layers):
-            if i > 0: # For all except the first up layer
-              x = self.upscale(x) # Upscale
-              x += h.pop() # Fetching stored output (skip connection)
-            x = self.act(l(x)) # Through the layer and the activation function
+    def forward(self, time):
+        """
+        Args:
+            time: torch.Tensor, the timestep tensor [batch_size]
             
-        return x
+        Returns:
+            torch.Tensor, the time embedding [batch_size, dim]
+        """
+        device = time.device
+        half_dim = self.dim // 2
+        embeddings = math.log(10000) / (half_dim - 1)
+        embeddings = torch.exp(torch.arange(half_dim, device=device) * -embeddings)
+        embeddings = time[:, None] * embeddings[None, :]
+        embeddings = torch.cat((embeddings.sin(), embeddings.cos()), dim=-1)
+        
+        # If dimension is odd, pad with zeros
+        if self.dim % 2 == 1:
+            embeddings = F.pad(embeddings, (0, 1, 0, 0))
+            
+        return embeddings
 
+class ResidualBlock(nn.Module):
+    """
+    Residual block for U-Net-like architecture adapted for vector data
+    """
+    def __init__(self, in_channels, out_channels, time_channels, use_attention=False):
+        super().__init__()
+        self.use_attention = use_attention
+        
+        # First linear layer
+        self.norm1 = nn.LayerNorm(in_channels)
+        self.act1 = nn.SiLU()
+        self.linear1 = nn.Linear(in_channels, out_channels)
+        
+        # Time projection
+        self.time_proj = nn.Sequential(
+            nn.SiLU(),
+            nn.Linear(time_channels, out_channels)
+        )
+         
+        # Second linear layer
+        self.norm2 = nn.LayerNorm(out_channels)
+        self.act2 = nn.SiLU()
+        self.linear2 = nn.Linear(out_channels, out_channels)
+        
+        # Residual connection if input and output dimensions differ
+        self.residual_connection = nn.Linear(in_channels, out_channels) if in_channels != out_channels else nn.Identity()
+        
+        # Optional attention layer
+        if use_attention:
+            self.attention = MultiHeadAttention(out_channels, num_heads=4)
+            self.attention_norm = nn.LayerNorm(out_channels)
+    
+    def forward(self, x, time_emb):
+        """
+        Args:
+            x: torch.Tensor, input feature tensor [batch_size, in_channels]
+            time_emb: torch.Tensor, time embedding [batch_size, time_channels]
+            
+        Returns:
+            torch.Tensor, output feature tensor [batch_size, out_channels]
+        """
+        # Residual path
+        residual = self.residual_connection(x)
+        
+        # Main path
+        h = self.norm1(x)
+        h = self.act1(h)
+        h = self.linear1(h)
+        
+        # Add time embedding
+        time_projection = self.time_proj(time_emb)
+        h = h + time_projection
+        
+        # Second part of main path
+        h = self.norm2(h)
+        h = self.act2(h)
+        h = self.linear2(h)
+        
+        # Apply attention if specified
+        if self.use_attention:
+            h = h + self.attention(self.attention_norm(h))
+        
+        # Add residual connection
+        return h + residual
 
+class MultiHeadAttention(nn.Module):
+    """
+    Multi-head self-attention module for vector data
+    """
+    def __init__(self, channels, num_heads=4):
+        super().__init__()
+        self.num_heads = num_heads
+        self.head_dim = channels // num_heads
+        assert self.head_dim * num_heads == channels, "channels must be divisible by num_heads"
+        
+        self.query = nn.Linear(channels, channels)
+        self.key = nn.Linear(channels, channels)
+        self.value = nn.Linear(channels, channels)
+        self.out_proj = nn.Linear(channels, channels)
+        
+    def forward(self, x):
+        """
+        Args:
+            x: torch.Tensor, input feature tensor [batch_size, channels]
+            
+        Returns:
+            torch.Tensor, attention output [batch_size, channels]
+        """
+        batch_size = x.shape[0]
+        
+        # Reshape for multi-head attention
+        q = self.query(x).view(batch_size, self.num_heads, self.head_dim)
+        k = self.key(x).view(batch_size, self.num_heads, self.head_dim)
+        v = self.value(x).view(batch_size, self.num_heads, self.head_dim)
+        
+        # Compute attention
+        attention = torch.einsum('bhd,bhd->bh', q, k) / (self.head_dim ** 0.5)
+        attention = F.softmax(attention, dim=-1)
+        
+        # Apply attention to values
+        out = torch.einsum('bh,bhd->bhd', attention, v)
+        out = out.reshape(batch_size, -1)
+        return self.out_proj(out)
 
+class UNetVectorModel(nn.Module):
+    """
+    U-Net-like architecture adapted for vector data
+    """
+    def __init__(self, n_dim, time_emb_dim=128, model_channels=128, channel_mults=(1, 2, 4, 8)):
+        super().__init__()
+        self.time_emb_dim = time_emb_dim
+        
+        # Time embedding
+        self.time_embedding = SinusoidalPositionEmbeddings(time_emb_dim)
+        self.time_mlp = nn.Sequential(
+            nn.Linear(time_emb_dim, time_emb_dim * 4),
+            nn.SiLU(),
+            nn.Linear(time_emb_dim * 4, time_emb_dim)
+        )
+        
+        # Input projection
+        self.input_proj = nn.Linear(n_dim, model_channels)
+        
+        # Down blocks
+        self.down_blocks = nn.ModuleList()
+        current_channels = model_channels
+        down_channel_list = []
+        
+        for mult in channel_mults:
+            out_channels = model_channels * mult
+            
+            # Add residual blocks with increasing channel dimensions
+            self.down_blocks.append(
+                ResidualBlock(current_channels, out_channels, time_emb_dim, use_attention=(mult >= 4))
+            )
+            
+            down_channel_list.append(current_channels)
+            current_channels = out_channels
+        
+        # Middle block with attention
+        self.middle_block1 = ResidualBlock(current_channels, current_channels, time_emb_dim, use_attention=True)
+        self.middle_block2 = ResidualBlock(current_channels, current_channels, time_emb_dim, use_attention=False)
+        
+        # Up blocks
+        self.up_blocks = nn.ModuleList()
+        
+        for mult in reversed(channel_mults):
+            out_channels = model_channels * mult
+            
+            # Skip connection from down blocks
+            skip_channels = down_channel_list.pop()
+            
+            # Add residual blocks with decreasing channel dimensions
+            self.up_blocks.append(
+                ResidualBlock(current_channels + skip_channels, out_channels, time_emb_dim, use_attention=(mult >= 4))
+            )
+            
+            current_channels = out_channels
+        
+        # Output projection
+        self.norm_out = nn.LayerNorm(current_channels)
+        self.act_out = nn.SiLU()
+        self.out_proj = nn.Linear(current_channels, n_dim)
+        
+    def forward(self, x, t):
+        """
+        Args:
+            x: torch.Tensor, input tensor [batch_size, n_dim]
+            t: torch.Tensor, timestep tensor [batch_size]
+            
+        Returns:
+            torch.Tensor, predicted noise [batch_size, n_dim]
+        """
+        # Time embedding
+        time_emb = self.time_embedding(t)
+        time_emb = self.time_mlp(time_emb)
+        
+        # Initial projection
+        h = self.input_proj(x)
+        
+        # Store skip connections
+        skips = []
+        
+        # Down path
+        for down_block in self.down_blocks:
+            skips.append(h)
+            h = down_block(h, time_emb)
+        
+        # Middle
+        h = self.middle_block1(h, time_emb)
+        h = self.middle_block2(h, time_emb)
+        
+        # Up path with skip connections
+        for up_block in self.up_blocks:
+            # Add skip connection
+            skip = skips.pop()
+            h = torch.cat([h, skip], dim=-1)
+            h = up_block(h, time_emb)
+        
+        # Output projection
+        h = self.norm_out(h)
+        h = self.act_out(h)
+        h = self.out_proj(h)
+        
+        return h
+    
 class NoiseScheduler():
     """
     Noise scheduler for the DDPM model
@@ -90,25 +289,11 @@ class DDPM(nn.Module):
         Args:
             n_dim: int, the dimensionality of the data
             n_steps: int, the number of steps in the diffusion process
-        We have separate learnable modules for `time_embed` and `model`. `time_embed` can be learned or a fixed function as well
-
         """
         super().__init__()
         self.n_dim = n_dim
         self.n_steps = n_steps
-        self.time_embed = nn.Sequential(
-            nn.Linear(1, 32),
-            nn.ReLU(),
-            nn.Linear(32, 64),
-            nn.ReLU(),
-        )
-        # self.model = nn.Sequential(
-        #     nn.Linear(n_dim + 64, 128),
-        #     nn.ReLU(),
-        #     nn.Linear(128, n_dim)
-        # )
-        self.model = BasicUNet(in_channels=n_dim + 1, out_channels=n_dim)
-        # self.model = BasicUNet(in_channels=n_dim, out_channels=n_dim, n_dim=n_dim)
+        self.model = UNetVectorModel(n_dim)
 
     def forward(self, x, t):
         """
@@ -119,9 +304,7 @@ class DDPM(nn.Module):
         Returns:
             torch.Tensor, the predicted noise tensor [batch_size, n_dim]
         """
-        t_emb = self.time_embed(t.unsqueeze(1).float())
-        x = torch.cat([x, t_emb], dim=-1)
-        return self.model(x)
+        return self.model(x, t)
 
 class ConditionalDDPM():
     pass
