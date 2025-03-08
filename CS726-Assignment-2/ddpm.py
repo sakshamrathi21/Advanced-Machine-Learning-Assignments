@@ -419,8 +419,8 @@ def sample(model, n_samples, noise_scheduler, return_intermediate=False):
         # print(t, mean, flush=True)
         if t > 1:
             noise = torch.randn_like(x_t, device=device)
-            std = torch.sqrt(beta_t)
-            x_t = mean + std * noise
+            std = (1 - noise_scheduler.alpha_bar[t - 1]) / (1 - alpha_bar_t) * beta_t
+            x_t = mean + torch.sqrt(std) * noise
         else:
             x_t = mean
         # print(t, x_t, flush=True)
@@ -428,7 +428,7 @@ def sample(model, n_samples, noise_scheduler, return_intermediate=False):
         if return_intermediate:
             intermediate_steps.append(x_t.clone().detach())
     
-    # print(x_t)
+    print(x_t)
 
     x_t_np = x_t.cpu().numpy()
     # print(x_t_np)
