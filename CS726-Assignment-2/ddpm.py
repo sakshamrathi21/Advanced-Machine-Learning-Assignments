@@ -12,41 +12,37 @@ import matplotlib.pyplot as plt
 
 
 class BasicUNet(nn.Module):
-    def __init__(self, in_channels=1, out_channels=1, n_dim=2):
+    """A minimal UNet implementation."""
+    def __init__(self, in_channels=1, out_channels=1):
         super().__init__()
-        Conv = getattr(nn, f'Conv{n_dim}d')
-        MaxPool = getattr(nn, f'MaxPool{n_dim}d')
-
-        self.down_layers = nn.ModuleList([
-            Conv(in_channels, 32, kernel_size=5, padding=2),
-            Conv(32, 64, kernel_size=5, padding=2),
-            Conv(64, 64, kernel_size=5, padding=2),
+        self.down_layers = torch.nn.ModuleList([ 
+            nn.Conv2d(in_channels, 32, kernel_size=5, padding=2),
+            nn.Conv2d(32, 64, kernel_size=5, padding=2),
+            nn.Conv2d(64, 64, kernel_size=5, padding=2),
         ])
-        
-        self.up_layers = nn.ModuleList([
-            Conv(64, 64, kernel_size=5, padding=2),
-            Conv(64, 32, kernel_size=5, padding=2),
-            Conv(32, out_channels, kernel_size=5, padding=2),
+        self.up_layers = torch.nn.ModuleList([
+            nn.Conv2d(64, 64, kernel_size=5, padding=2),
+            nn.Conv2d(64, 32, kernel_size=5, padding=2),
+            nn.Conv2d(32, out_channels, kernel_size=5, padding=2), 
         ])
-        
-        self.act = nn.SiLU()
-        self.downscale = MaxPool(2)
-        self.upscale = nn.Upsample(scale_factor=2, mode='nearest')
+        self.act = nn.SiLU() # The activation function
+        self.downscale = nn.MaxPool2d(2)
+        self.upscale = nn.Upsample(scale_factor=2)
 
     def forward(self, x):
         h = []
-        for i, layer in enumerate(self.down_layers):
-            x = self.act(layer(x))
-            if i < 2:
-                h.append(x)
-                x = self.downscale(x)
-        
-        for i, layer in enumerate(self.up_layers):
-            if i > 0:
-                x = self.upscale(x)
-                x += h.pop()
-            x = self.act(layer(x))
-        
+        for i, l in enumerate(self.down_layers):
+            x = self.act(l(x)) # Through the layer and the activation function
+            if i < 2: # For all but the third (final) down layer:
+              h.append(x) # Storing output for skip connection
+              x = self.downscale(x) # Downscale ready for the next layer
+              
+        for i, l in enumerate(self.up_layers):
+            if i > 0: # For all except the first up layer
+              x = self.upscale(x) # Upscale
+              x += h.pop() # Fetching stored output (skip connection)
+            x = self.act(l(x)) # Through the layer and the activation function
+            
         return x
 
 
@@ -111,7 +107,8 @@ class DDPM(nn.Module):
         #     nn.ReLU(),
         #     nn.Linear(128, n_dim)
         # )
-        self.model = BasicUNet(in_channels=n_dim, out_channels=n_dim, n_dim=n_dim)
+        self.model = BasicUNet(in_channels=n_dim + 1, out_channels=n_dim)
+        # self.model = BasicUNet(in_channels=n_dim, out_channels=n_dim, n_dim=n_dim)
 
     def forward(self, x, t):
         """
@@ -122,22 +119,9 @@ class DDPM(nn.Module):
         Returns:
             torch.Tensor, the predicted noise tensor [batch_size, n_dim]
         """
-        t_emb = self.time_embed(t.unsqueeze(1).float())  # [batch_size, 64]
-        
-        # Ensure x has at least 4 dimensions
-        if x.dim() == 2:  
-            x = x.unsqueeze(-1).unsqueeze(-1)  # Make it [batch_size, channels, 1, 1]
-        
-        # Reshape time embedding to [batch_size, 64, 1, 1] for broadcasting
-        t_emb = t_emb[:, :, None, None]  
-
-        # Concatenate along the channel dimension
-        x = torch.cat([x, t_emb.expand(x.shape[0], t_emb.shape[1], *x.shape[2:])], dim=1)  
-
+        t_emb = self.time_embed(t.unsqueeze(1).float())
+        x = torch.cat([x, t_emb], dim=-1)
         return self.model(x)
-        # t_emb = self.time_embed(t.unsqueeze(1).float())
-        # x = torch.cat([x, t_emb], dim=-1)
-        # return self.model(x)
 
 class ConditionalDDPM():
     pass
