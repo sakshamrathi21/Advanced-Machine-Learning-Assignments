@@ -428,7 +428,7 @@ def sample(model, n_samples, noise_scheduler, return_intermediate=False):
         if return_intermediate:
             intermediate_steps.append(x_t.clone().detach())
     
-    print(x_t)
+    # print(x_t)
 
     x_t_np = x_t.cpu().numpy()
     # print(x_t_np)
