@@ -10,6 +10,47 @@ import dataset
 import os
 import matplotlib.pyplot as plt
 
+
+class BasicUNet(nn.Module):
+    def __init__(self, in_channels=1, out_channels=1, n_dim=2):
+        super().__init__()
+        Conv = getattr(nn, f'Conv{n_dim}d')
+        MaxPool = getattr(nn, f'MaxPool{n_dim}d')
+
+        self.down_layers = nn.ModuleList([
+            Conv(in_channels, 32, kernel_size=5, padding=2),
+            Conv(32, 64, kernel_size=5, padding=2),
+            Conv(64, 64, kernel_size=5, padding=2),
+        ])
+        
+        self.up_layers = nn.ModuleList([
+            Conv(64, 64, kernel_size=5, padding=2),
+            Conv(64, 32, kernel_size=5, padding=2),
+            Conv(32, out_channels, kernel_size=5, padding=2),
+        ])
+        
+        self.act = nn.SiLU()
+        self.downscale = MaxPool(2)
+        self.upscale = nn.Upsample(scale_factor=2, mode='nearest')
+
+    def forward(self, x):
+        h = []
+        for i, layer in enumerate(self.down_layers):
+            x = self.act(layer(x))
+            if i < 2:
+                h.append(x)
+                x = self.downscale(x)
+        
+        for i, layer in enumerate(self.up_layers):
+            if i > 0:
+                x = self.upscale(x)
+                x += h.pop()
+            x = self.act(layer(x))
+        
+        return x
+
+
+
 class NoiseScheduler():
     """
     Noise scheduler for the DDPM model
@@ -65,11 +106,12 @@ class DDPM(nn.Module):
             nn.Linear(32, 64),
             nn.ReLU(),
         )
-        self.model = nn.Sequential(
-            nn.Linear(n_dim + 64, 128),
-            nn.ReLU(),
-            nn.Linear(128, n_dim)
-        )
+        # self.model = nn.Sequential(
+        #     nn.Linear(n_dim + 64, 128),
+        #     nn.ReLU(),
+        #     nn.Linear(128, n_dim)
+        # )
+        self.model = BasicUNet(in_channels=n_dim, out_channels=n_dim, n_dim=n_dim)
 
     def forward(self, x, t):
         """
@@ -80,9 +122,22 @@ class DDPM(nn.Module):
         Returns:
             torch.Tensor, the predicted noise tensor [batch_size, n_dim]
         """
-        t_emb = self.time_embed(t.unsqueeze(1).float())
-        x = torch.cat([x, t_emb], dim=-1)
+        t_emb = self.time_embed(t.unsqueeze(1).float())  # [batch_size, 64]
+        
+        # Ensure x has at least 4 dimensions
+        if x.dim() == 2:  
+            x = x.unsqueeze(-1).unsqueeze(-1)  # Make it [batch_size, channels, 1, 1]
+        
+        # Reshape time embedding to [batch_size, 64, 1, 1] for broadcasting
+        t_emb = t_emb[:, :, None, None]  
+
+        # Concatenate along the channel dimension
+        x = torch.cat([x, t_emb.expand(x.shape[0], t_emb.shape[1], *x.shape[2:])], dim=1)  
+
         return self.model(x)
+        # t_emb = self.time_embed(t.unsqueeze(1).float())
+        # x = torch.cat([x, t_emb], dim=-1)
+        # return self.model(x)
 
 class ConditionalDDPM():
     pass
@@ -132,7 +187,7 @@ def train(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
             alpha_bar_t = alpha_bar_t.to(device)
             x_t = torch.sqrt(alpha_bar_t) * x + torch.sqrt(1 - alpha_bar_t) * noise
             pred = model(x_t, t)
-            loss = loss_fn(pred, x) 
+            loss = loss_fn(pred, noise) 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -183,23 +238,41 @@ def sample(model, n_samples, noise_scheduler, return_intermediate=False):
     intermediate_steps = [] if return_intermediate else None
     
     for t in reversed(range(noise_scheduler.num_timesteps)):
+        if t == 0:
+            break
         t_tensor = torch.full((n_samples,), t, device=device, dtype=torch.long)
+        # print(t_tensor)
         noise_pred = model(x_t, t_tensor)
+        # print(noise_pred)
         alpha_bar_t = noise_scheduler.alpha_bar[t]
         alpha_t = noise_scheduler.alphas[t]
         beta_t = noise_scheduler.betas[t]
-        
+        # print(alpha_bar_t, alpha_t, beta_t)
         mean = (1 / torch.sqrt(alpha_t)) * (x_t - ((1 - alpha_t) / torch.sqrt(1 - alpha_bar_t)) * noise_pred)
-        if t > 0:
+        # print(t, mean, flush=True)
+        if t > 1:
             noise = torch.randn_like(x_t, device=device)
             std = torch.sqrt(beta_t)
             x_t = mean + std * noise
         else:
             x_t = mean
+        # print(t, x_t, flush=True)
         
         if return_intermediate:
             intermediate_steps.append(x_t.clone().detach())
     
+    # print(x_t)
+
+    x_t_np = x_t.cpu().numpy()
+    # print(x_t_np)
+    # Scatter plot
+    plt.figure(figsize=(6, 6))
+    plt.scatter(x_t_np[:, 0], x_t_np[:, 1], alpha=0.6)
+    plt.xlabel("x1")
+    plt.ylabel("x2")
+    plt.title("Final Sampled Points")
+    plt.grid()
+    plt.savefig("moon.png")
     return (x_t if not return_intermediate else intermediate_steps)
 
 def sampleCFG(model, n_samples, noise_scheduler, guidance_scale, class_label):
