@@ -1,0 +1,21 @@
+
+Shape of samples tensor:  torch.Size([10000, 2])
+Shape of data_X tensor:  torch.Size([8000, 2])
+NLL:  tensor(1.0395)
+Shape of samples tensor:  torch.Size([10000, 2])
+Shape of data_X tensor:  torch.Size([8000, 2])
+NLL:  tensor(0.9811)
+Shape of samples tensor:  torch.Size([10000, 2])
+Shape of data_X tensor:  torch.Size([8000, 2])
+NLL:  tensor(1.0395)
+Shape of samples tensor:  torch.Size([10000, 2])
+Shape of data_X tensor:  torch.Size([8000, 2])
+NLL:  tensor(0.9480)
+Sampling code start  exps/ddpm_2_150_0.0001_0.02_moons
+Shape of samples tensor:  torch.Size([10000, 2])
+Shape of data_X tensor:  torch.Size([8000, 2])
+NLL:  tensor(0.9288)
+Sampling code start  exps/ddpm_2_200_0.0001_0.02_moons
+Shape of samples tensor:  torch.Size([10000, 2])
+Shape of data_X tensor:  torch.Size([8000, 2])
+NLL:  tensor(0.9331)
