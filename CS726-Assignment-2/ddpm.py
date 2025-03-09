@@ -10,6 +10,7 @@ import dataset
 import os
 import matplotlib.pyplot as plt
 import math
+from utils import get_nll, get_emd
 
 class SinusoidalPositionEmbeddings(nn.Module):
     """
@@ -515,8 +516,13 @@ if __name__ == "__main__":
         train(model, noise_scheduler, dataloader, optimizer, epochs, run_name)
 
     elif args.mode == 'sample':
+        data_X, data_y = dataset.load_dataset(args.dataset)
         model.load_state_dict(torch.load(f'{run_name}/model.pth'))
         samples = sample(model, args.n_samples, noise_scheduler)
+        # we need to print the nll and emd values
+        print(samples.shape, data_X.shape, flush=True)
+        # print("Emd: ", get_emd(samples.cpu().numpy(), data_X), flush=True)
+        print("NLL: ", get_nll(data_X.to(device), samples.to(device)), flush=True)
         torch.save(samples, f'{run_name}/samples_{args.seed}_{args.n_samples}.pth')
     else:
         raise ValueError(f"Invalid mode {args.mode}")

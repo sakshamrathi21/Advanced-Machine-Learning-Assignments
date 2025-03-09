@@ -5,20 +5,22 @@ import random
 from pyemd import emd
 from matplotlib.colors import to_rgba
 import matplotlib.animation as animation
+import math
 
-def gaussian_kernel(x, x0, temperature=1e-1):
+def gaussian_kernel(x, x0, device, temperature=1e-1):
     dim = x0.size(1)
     x = x.view((1, -1))
     exp_term = torch.sum(- 0.5 * (x - x0) ** 2, dim=1)
-    main_term = torch.exp(exp_term / (2 * temperature))
-    coeff = 1. / torch.sqrt(torch.Tensor([2 * torch.pi * temperature])) ** dim
-    prod = coeff * main_term
+    main_term = torch.exp(exp_term / (2 * temperature)).to(device)
+    coeff = 1. / torch.sqrt(torch.Tensor([2 * math.pi * temperature])) ** dim
+    prod = coeff.to(device) * main_term.to(device)
     return torch.sum(prod) / x0.size(0)
 
 def get_likelihood(data, samples, temperature):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     lh = torch.zeros(samples.size(0))
     for i in range(samples.size(0)):
-        lh[i] = gaussian_kernel(samples[i,:], data, temperature)
+        lh[i] = gaussian_kernel(samples[i,:], data, device, temperature)
     return torch.mean(lh)
 
 def get_nll(data, samples, temperature=1e-1):
