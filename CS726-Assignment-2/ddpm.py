@@ -462,7 +462,7 @@ def sample(model, n_samples, noise_scheduler, return_intermediate=False):
 
     x_t_np = x_t.cpu().numpy()
     plt.figure(figsize=(6, 6))
-    plt.scatter(x_t_np[:, 0], x_t_np[:, 1], alpha=0.6)
+    plt.scatter(x_t_np[:, 0], x_t_np[:, 1], alpha=0.6, s=10)
     plt.xlabel("x1")
     plt.ylabel("x2")
     plt.title("Final Sampled Points")
