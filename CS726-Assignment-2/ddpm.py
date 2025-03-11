@@ -563,7 +563,6 @@ def sampleSVDD(model, n_samples, noise_scheduler, reward_scale, reward_fn):
     
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=['train', 'sample'], default='sample')
     parser.add_argument("--n_steps", type=int, default=None)
