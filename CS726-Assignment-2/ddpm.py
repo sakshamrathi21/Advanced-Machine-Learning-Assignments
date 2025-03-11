@@ -137,7 +137,8 @@ class MultiHeadAttention(nn.Module):
         v = self.value(x).view(batch_size, self.num_heads, self.head_dim)
         
         # Compute attention
-        attention = torch.einsum('bhd,bhd->bh', q, k) / (self.head_dim ** 0.5)
+        # attention = torch.einsum('bhd,bhd->bh', q, k) / (self.head_dim ** 0.5)
+        attention = torch.einsum('bhd,bhd->bh', q, k)
         attention = F.softmax(attention, dim=-1)
         
         # Apply attention to values
@@ -308,7 +309,24 @@ class DDPM(nn.Module):
         return self.model(x, t)
 
 class ConditionalDDPM():
-    pass
+    def __init__(self, n_dim = 3, n_steps = 200, n_classes = 10):
+        super().__init__()
+        self.n_dim = n_dim
+        self.n_steps = n_steps
+        self.n_classes = n_classes
+        self.model = UNetVectorModel(n_dim + n_classes)
+    
+    def forward(self, x, t, class_labels = None):
+        batch_size = x.shape[0]
+        device = x.device
+        if class_labels is None:
+            class_encoding = torch.zeros(batch_size, self.n_classes, device=device)
+        else:
+            class_encoding = F.one_hot(class_labels, num_classes=self.n_classes).float().to(device)
+        conditioned_x = torch.cat([x, class_encoding], dim=1)
+        noise_pred = self.model(conditioned_x, t)
+        return noise_pred[:, :self.n_dim]
+
     
 class ClassifierDDPM():
     """
@@ -316,16 +334,34 @@ class ClassifierDDPM():
     """
     
     def __init__(self, model: ConditionalDDPM, noise_scheduler: NoiseScheduler):
-        pass
+        self.model = model
+        self.noise_scheduler = noise_scheduler
+        self.device = next(model.parameters()).device
 
     def __call__(self, x):
-        pass
+        return self.predict(x)
 
     def predict(self, x):
-        pass
+        probs = self.predict_proba(x)
+        return torch.argmax(probs, dim=1)
 
     def predict_proba(self, x):
-        pass
+        batch_size = x.shape[0]
+        n_classes = self.model.n_classes
+        device = self.device
+        x = x.to(device)
+        t = torch.ones(batch_size, dtype=torch.long, device=device) * (self.noise_scheduler.num_timesteps // 2)
+        alpha_bar_t = self.noise_scheduler.alpha_bar[t].view(-1, 1)
+        noise = torch.randn_like(x, device=device)
+        x_t = torch.sqrt(alpha_bar_t) * x + torch.sqrt(1 - alpha_bar_t) * noise
+        class_scores = torch.zeros((batch_size, n_classes), device=device)
+        for c in range(n_classes):
+            class_labels = torch.full((batch_size,), c, dtype=torch.long, device=device)
+            predicted_noise = self.model(x_t, t, class_labels)
+            error = torch.mean((predicted_noise - noise)**2, dim=1)
+            class_scores[:, c] = -error
+        probs = F.softmax(class_scores, dim=1)
+        return probs
 
 def train(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
     """
@@ -409,31 +445,22 @@ def sample(model, n_samples, noise_scheduler, return_intermediate=False):
         if t == 0:
             break
         t_tensor = torch.full((n_samples,), t, device=device, dtype=torch.long)
-        # print(t_tensor)
         noise_pred = model(x_t, t_tensor)
-        # print(noise_pred)
         alpha_bar_t = noise_scheduler.alpha_bar[t]
         alpha_t = noise_scheduler.alphas[t]
         beta_t = noise_scheduler.betas[t]
-        # print(alpha_bar_t, alpha_t, beta_t)
         mean = (1 / torch.sqrt(alpha_t)) * (x_t - ((1 - alpha_t) / torch.sqrt(1 - alpha_bar_t)) * noise_pred)
-        # print(t, mean, flush=True)
         if t > 1:
             noise = torch.randn_like(x_t, device=device)
             std = (1 - noise_scheduler.alpha_bar[t - 1]) / (1 - alpha_bar_t) * beta_t
             x_t = mean + torch.sqrt(std) * noise
         else:
             x_t = mean
-        # print(t, x_t, flush=True)
         
         if return_intermediate:
             intermediate_steps.append(x_t.clone().detach())
-    
-    # print(x_t)
 
     x_t_np = x_t.cpu().numpy()
-    # print(x_t_np)
-    # Scatter plot
     plt.figure(figsize=(6, 6))
     plt.scatter(x_t_np[:, 0], x_t_np[:, 1], alpha=0.6)
     plt.xlabel("x1")
@@ -457,7 +484,28 @@ def sampleCFG(model, n_samples, noise_scheduler, guidance_scale, class_label):
     Returns:
         torch.Tensor, samples from the model [n_samples, n_dim]
     """
-    pass
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    n_dim = model.n_dim
+    x_t = torch.randn((n_samples, n_dim), device=device)
+    class_labels = torch.full((n_samples,), class_label, dtype=torch.long, device=device)
+    for t in reversed(range(noise_scheduler.num_timesteps)):
+        if t == 0:
+            break
+        t_tensor = torch.full((n_samples,), t, device=device, dtype=torch.long)
+        noise_pred_conditional = model(x_t, t_tensor, class_labels)
+        noise_pred_unconditional = model(x_t, t_tensor, None)
+        noise_pred = noise_pred_unconditional + guidance_scale * (noise_pred_conditional - noise_pred_unconditional)
+        alpha_bar_t = noise_scheduler.alpha_bar[t]
+        alpha_t = noise_scheduler.alphas[t]
+        beta_t = noise_scheduler.betas[t]
+        mean = (1 / torch.sqrt(alpha_t)) * (x_t - ((1 - alpha_t) / torch.sqrt(1 - alpha_bar_t)) * noise_pred)
+        if t > 1:
+            noise = torch.randn_like(x_t, device=device)
+            std = (1 - noise_scheduler.alpha_bar[t - 1]) / (1 - alpha_bar_t) * beta_t
+            x_t = mean + torch.sqrt(std) * noise
+        else:
+            x_t = mean
+    return x_t
 
 def sampleSVDD(model, n_samples, noise_scheduler, reward_scale, reward_fn):
     """
@@ -473,7 +521,45 @@ def sampleSVDD(model, n_samples, noise_scheduler, reward_scale, reward_fn):
     Returns:
         torch.Tensor, samples from the model [n_samples, n_dim]
     """
-    pass
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    n_dim = model.n_dim
+
+    x_t = torch.randn((n_samples, n_dim), device=device)
+
+    for t in reversed(range(noise_scheduler.num_timesteps)):
+        if t == 0:
+            break
+        
+        t_tensor = torch.full((n_samples,), t, device=device, dtype=torch.long)
+    
+        noise_pred = model(x_t, t_tensor)
+        
+        alpha_bar_t = noise_scheduler.alpha_bar[t]
+        alpha_t = noise_scheduler.alphas[t]
+        beta_t = noise_scheduler.betas[t]
+        x_0_pred = (x_t - torch.sqrt(1 - alpha_bar_t) * noise_pred) / torch.sqrt(alpha_bar_t)
+
+        if reward_scale > 0:
+            rewards = reward_fn(x_0_pred)
+            eps = 1e-4
+            grad_rewards = torch.zeros_like(x_t)
+            
+            for i in range(n_dim):
+                x_0_perturbed = x_0_pred.clone()
+                x_0_perturbed[:, i] += eps
+                rewards_perturbed = reward_fn(x_0_perturbed)
+                grad_rewards[:, i] = (rewards_perturbed - rewards) / eps
+            grad_rewards = grad_rewards * reward_scale
+            noise_pred = noise_pred - torch.sqrt(1 - alpha_bar_t) * grad_rewards
+        mean = (1 / torch.sqrt(alpha_t)) * (x_t - ((1 - alpha_t) / torch.sqrt(1 - alpha_bar_t)) * noise_pred)
+        if t > 1:
+            noise = torch.randn_like(x_t, device=device)
+            std = (1 - noise_scheduler.alpha_bar[t - 1]) / (1 - alpha_bar_t) * beta_t
+            x_t = mean + torch.sqrt(std) * noise
+        else:
+            x_t = mean
+    
+    return x_t
     
 
 if __name__ == "__main__":
