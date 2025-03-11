@@ -583,7 +583,8 @@ if __name__ == "__main__":
     run_name = f'exps/ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}' # can include more hyperparams
     os.makedirs(run_name, exist_ok=True)
 
-    model = DDPM(n_dim=args.n_dim, n_steps=args.n_steps)
+    # model = DDPM(n_dim=args.n_dim, n_steps=args.n_steps)
+    model = ConditionalDDPM(n_dim=args.n_dim, n_steps=args.n_steps, n_classes=2)
     noise_scheduler = NoiseScheduler(num_timesteps=args.n_steps, beta_start=args.lbeta, beta_end=args.ubeta)
     model = model.to(device)
 
@@ -598,6 +599,7 @@ if __name__ == "__main__":
         if data_y == None:
             dataloader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(data_X), batch_size=args.batch_size, shuffle=True)
         else:
+            print(data_y)
             dataloader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(data_X, data_y), batch_size=args.batch_size, shuffle=True)
         train(model, noise_scheduler, dataloader, optimizer, epochs, run_name)
 
