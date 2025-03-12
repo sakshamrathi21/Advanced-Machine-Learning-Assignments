@@ -523,7 +523,7 @@ def sample(model, n_samples, noise_scheduler, return_intermediate=False):
     return (x_t if not return_intermediate else intermediate_steps)
 
 @torch.no_grad()
-def sampleConditional(model, n_samples, noise_scheduler, class_label=None, return_intermediate=False): 
+def sampleConditional(model, n_samples, noise_scheduler, class_label=None, return_intermediate=False, save_plot=True): 
     """
     Sample from the conditional model
     
@@ -533,15 +533,13 @@ def sampleConditional(model, n_samples, noise_scheduler, class_label=None, retur
         noise_scheduler: NoiseScheduler
         class_label: int or None, the class label to condition on. If None, samples are generated unconditionally.
         return_intermediate: bool, whether to return intermediate steps
+        save_plot: bool, whether to save the plot
         
     Returns:
         If `return_intermediate` is `False`:
             torch.Tensor, samples from the model [n_samples, n_dim]
         Else:
             list of torch.Tensor, intermediate steps of the diffusion process
-            
-    This function samples from a conditional diffusion model. If class_label is specified,
-    all samples will be conditioned on that class.
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     n_dim = model.n_dim
@@ -551,6 +549,7 @@ def sampleConditional(model, n_samples, noise_scheduler, class_label=None, retur
     else:
         class_labels = None
     intermediate_steps = [] if return_intermediate else None
+    
     for t in reversed(range(noise_scheduler.num_timesteps)):
         if t == 0:
             break
@@ -567,9 +566,10 @@ def sampleConditional(model, n_samples, noise_scheduler, class_label=None, retur
             x_t = mean + torch.sqrt(std) * noise
         else:
             x_t = mean
+            
         if return_intermediate:
             intermediate_steps.append(x_t.clone().detach())
-    if class_label is not None:
+    if save_plot and class_label is not None:
         x_t_np = x_t.cpu().numpy()
         plt.figure(figsize=(6, 6))
         plt.scatter(x_t_np[:, 0], x_t_np[:, 1], alpha=0.6, s=10)
@@ -580,6 +580,57 @@ def sampleConditional(model, n_samples, noise_scheduler, class_label=None, retur
         plt.savefig(f"conditional_samples_class_{class_label}.png")
         
     return (x_t if not return_intermediate else intermediate_steps)
+
+
+def sampleMultipleClasses(model, n_samples_per_class, noise_scheduler, n_classes, run_name):
+    """
+    Sample multiple classes from the conditional model and plot them with different colors
+    
+    Args:
+        model: ConditionalDDPM
+        n_samples_per_class: int, number of samples per class
+        noise_scheduler: NoiseScheduler
+        n_classes: int, number of classes to sample
+        run_name: str, path to save the plot
+    
+    Returns:
+        dict of torch.Tensor, samples for each class {class_label: samples}
+    """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    all_samples = {}
+    colors = plt.cm.get_cmap('tab10', n_classes)
+    
+    plt.figure(figsize=(10, 8))
+    
+    for class_label in range(n_classes):
+        samples = sampleConditional(
+            model, 
+            n_samples_per_class, 
+            noise_scheduler, 
+            class_label=class_label, 
+            save_plot=False
+        )
+    
+        all_samples[class_label] = samples
+        samples_np = samples.cpu().numpy()
+        plt.scatter(
+            samples_np[:, 0], 
+            samples_np[:, 1], 
+            alpha=0.7, 
+            s=15, 
+            color=colors(class_label),
+            label=f"Class {class_label}"
+        )
+    
+    plt.xlabel("x1")
+    plt.ylabel("x2")
+    plt.title(f"Samples from Conditional DDPM for All Classes")
+    plt.legend()
+    plt.grid(True)
+    plt.savefig(f"{run_name}/multi_class_samples.png")
+    plt.close()
+    
+    return all_samples
 
 
 def sampleCFG(model, n_samples, noise_scheduler, guidance_scale, class_label):
@@ -732,9 +783,17 @@ if __name__ == "__main__":
         data_X, _ = dataset.load_dataset(args.dataset)
         model.load_state_dict(torch.load(f'{run_name}/model.pth'))
         samples = sample(model, args.n_samples, noise_scheduler)
+        samples = samples.cpu().numpy()
         print(f"Shape of samples tensor: {samples.shape}")
         print(f"Shape of data_X tensor: {data_X.shape}")
         print(f"NLL: {get_nll(data_X.to(device), samples.to(device))}")
+        plt.figure(figsize=(6, 6))
+        plt.scatter(samples[:, 0], samples[:, 1], alpha=0.6, s=10)
+        plt.xlabel("x1")
+        plt.ylabel("x2")
+        plt.title(f"Samples for {args.dataset})")
+        plt.grid()
+        plt.savefig(f"Samples for {args.dataset}_{run_name}).png")
         torch.save(samples, f'{run_name}/samples_{args.seed}_{args.n_samples}.pth')
 
     elif args.mode == 'sample_conditional':
@@ -742,6 +801,7 @@ if __name__ == "__main__":
         data_X, data_y = dataset.load_dataset(args.dataset)
         model.load_state_dict(torch.load(f'{run_name}/model.pth'))
         samples = sampleConditional(model, args.n_samples, noise_scheduler, class_label=args.class_label)
+        samples_np = samples.cpu().numpy()
         print(f"Shape of samples tensor: {samples.shape}")
         if data_y is not None:
             class_indices = (data_y == args.class_label).nonzero().squeeze()
@@ -749,7 +809,35 @@ if __name__ == "__main__":
                 class_data = data_X[class_indices]
                 print(f"Shape of class {args.class_label} data tensor: {class_data.shape}")
                 print(f"Class-specific NLL: {get_nll(class_data.to(device), samples.to(device))}")
+    
+        plt.figure(figsize=(6, 6))
+        plt.scatter(samples_np[:, 0], samples_np[:, 1], alpha=0.6, s=10)
+        plt.xlabel("x1")
+        plt.ylabel("x2")
+        plt.title(f"Samples for Class {args.class_label}")
+        plt.grid()
+        plt.savefig(f"{run_name}/conditional_samples_class_{args.class_label}.png")
+        
         torch.save(samples, f'{run_name}/conditional_samples_class_{args.class_label}_{args.seed}_{args.n_samples}.pth')
+
+    elif args.mode == 'sample_multi_class':
+        print(f"Multi-class conditional sampling from {run_name}")
+        data_X, data_y = dataset.load_dataset(args.dataset)
+        model.load_state_dict(torch.load(f'{run_name}/model.pth'))
+        samples_per_class = args.n_samples // args.n_classes
+        all_samples = sampleMultipleClasses(model, samples_per_class, noise_scheduler, args.n_classes, run_name)
+        if data_y is not None:
+            for class_label in range(args.n_classes):
+                class_indices = (data_y == class_label).nonzero().squeeze()
+                if len(class_indices) > 0:
+                    class_data = data_X[class_indices]
+                    class_samples = all_samples[class_label]
+                    print(f"Class {class_label}:")
+                    print(f"  - Shape of ground truth data: {class_data.shape}")
+                    print(f"  - Shape of generated samples: {class_samples.shape}")
+                    print(f"  - Class-specific NLL: {get_nll(class_data.to(device), class_samples)}")
+        all_samples_tensor = torch.cat([samples for samples in all_samples.values()], dim=0)
+        torch.save(all_samples_tensor, f'{run_name}/multi_class_samples_{args.seed}_{args.n_samples}.pth')
 
     elif args.mode == 'sample_cfg':
         print(f"CFG sampling from {run_name} for class {args.class_label} with guidance scale {args.guidance_scale}")
