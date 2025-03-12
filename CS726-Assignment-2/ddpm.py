@@ -70,17 +70,17 @@ class ResidualBlock(nn.Module):
             torch.Tensor, output feature tensor [batch_size, out_channels]
         """
         residual = self.residual_connection(x)
-        h = self.norm1(x)
-        h = self.act1(h)
-        h = self.linear1(h)
+        feature = self.norm1(x)
+        feature = self.act1(feature)
+        feature = self.linear1(feature)
         time_projection = self.time_proj(time_emb)
-        h = h + time_projection
-        h = self.norm2(h)
-        h = self.act2(h)
-        h = self.linear2(h)
+        feature = feature + time_projection
+        feature = self.norm2(feature)
+        feature = self.act2(feature)
+        feature = self.linear2(feature)
         if self.use_attention:
-            h = h + self.attention(self.attention_norm(h))
-        return h + residual
+            feature = feature + self.attention(self.attention_norm(feature))
+        return feature + residual
 
 class MultiHeadAttention(nn.Module):
     """
@@ -156,21 +156,21 @@ class UNetVectorModel(nn.Module):
         """
         time_emb = self.time_embedding(t)
         time_emb = self.time_mlp(time_emb)
-        h = self.input_proj(x)
+        feature = self.input_proj(x)
         skips = []
         for down_block in self.down_blocks:
-            skips.append(h)
-            h = down_block(h, time_emb)
-        h = self.middle_block1(h, time_emb)
-        h = self.middle_block2(h, time_emb)
+            skips.append(feature)
+            feature = down_block(feature, time_emb)
+        feature = self.middle_block1(feature, time_emb)
+        feature = self.middle_block2(feature, time_emb)
         for up_block in self.up_blocks:
             skip = skips.pop()
-            h = torch.cat([h, skip], dim=-1)
-            h = up_block(h, time_emb)
-        h = self.norm_out(h)
-        h = self.act_out(h)
-        h = self.out_proj(h)
-        return h
+            feature = torch.cat([feature, skip], dim=-1)
+            feature = up_block(feature, time_emb)
+        feature = self.norm_out(feature)
+        feature = self.act_out(feature)
+        feature = self.out_proj(feature)
+        return feature
     
 class NoiseScheduler():
     """
