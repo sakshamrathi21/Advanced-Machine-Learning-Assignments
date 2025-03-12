@@ -362,6 +362,58 @@ class ClassifierDDPM():
             class_scores[:, c] = -error
         probs = F.softmax(class_scores, dim=1)
         return probs
+    
+def trainConditional(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
+    """
+    Train the model and save the model and necessary plots
+
+    Args:
+        model: DDPM, model to train
+        noise_scheduler: NoiseScheduler, scheduler for the noise
+        dataloader: torch.utils.data.DataLoader, dataloader for the dataset
+        optimizer: torch.optim.Optimizer, optimizer to use
+        epochs: int, number of epochs to train the model
+        run_name: str, path to save the model
+    """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
+    model.train()
+    loss_fn = nn.MSELoss()
+    loss_history = []
+    for epoch in range(epochs):
+        epoch_loss = 0
+        progress_bar = tqdm(dataloader, desc=f"Epoch {epoch+1}/{epochs}", leave=False)
+        for x, y in progress_bar:
+            x = x.to(device)
+            t = torch.randint(0, noise_scheduler.num_timesteps, (x.shape[0],), device=device)
+            noise = torch.randn_like(x, device=device)
+            alpha_bar_t = noise_scheduler.alpha_bar[t].view(-1, 1)
+            alpha_bar_t = alpha_bar_t.to(device)
+            x_t = torch.sqrt(alpha_bar_t) * x + torch.sqrt(1 - alpha_bar_t) * noise
+            pred = model(x_t, t, y)
+            loss = loss_fn(pred, noise) 
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            epoch_loss += loss.item()
+            progress_bar.set_postfix(loss=loss.item())
+        avg_epoch_loss = epoch_loss / len(dataloader)
+        loss_history.append(avg_epoch_loss)
+        print(f"Epoch {epoch+1}/{epochs} Loss: {avg_epoch_loss}")
+
+    os.makedirs(run_name, exist_ok=True)
+    model_path = os.path.join(run_name, "model.pth")
+    torch.save(model.state_dict(), model_path)
+    print(f"Model saved to {model_path}")
+
+    # Plot loss curve
+    plt.figure(figsize=(10, 5))
+    plt.plot(range(1, epochs + 1), loss_history, marker="o", linestyle="-")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss")
+    plt.title("Training Loss Curve")
+    plt.grid(True)
+    plt.savefig(os.path.join(run_name, "loss_curve.png"))
 
 def train(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
     """
@@ -470,6 +522,66 @@ def sample(model, n_samples, noise_scheduler, return_intermediate=False):
     plt.savefig("moon.png")
     return (x_t if not return_intermediate else intermediate_steps)
 
+@torch.no_grad()
+def sampleConditional(model, n_samples, noise_scheduler, class_label=None, return_intermediate=False): 
+    """
+    Sample from the conditional model
+    
+    Args:
+        model: ConditionalDDPM
+        n_samples: int
+        noise_scheduler: NoiseScheduler
+        class_label: int or None, the class label to condition on. If None, samples are generated unconditionally.
+        return_intermediate: bool, whether to return intermediate steps
+        
+    Returns:
+        If `return_intermediate` is `False`:
+            torch.Tensor, samples from the model [n_samples, n_dim]
+        Else:
+            list of torch.Tensor, intermediate steps of the diffusion process
+            
+    This function samples from a conditional diffusion model. If class_label is specified,
+    all samples will be conditioned on that class.
+    """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    n_dim = model.n_dim
+    x_t = torch.randn((n_samples, n_dim), device=device)  # Start from Gaussian noise
+    if class_label is not None:
+        class_labels = torch.full((n_samples,), class_label, dtype=torch.long, device=device)
+    else:
+        class_labels = None
+    intermediate_steps = [] if return_intermediate else None
+    for t in reversed(range(noise_scheduler.num_timesteps)):
+        if t == 0:
+            break
+            
+        t_tensor = torch.full((n_samples,), t, device=device, dtype=torch.long)
+        noise_pred = model(x_t, t_tensor, class_labels)
+        alpha_bar_t = noise_scheduler.alpha_bar[t]
+        alpha_t = noise_scheduler.alphas[t]
+        beta_t = noise_scheduler.betas[t]
+        mean = (1 / torch.sqrt(alpha_t)) * (x_t - ((1 - alpha_t) / torch.sqrt(1 - alpha_bar_t)) * noise_pred)
+        if t > 1:
+            noise = torch.randn_like(x_t, device=device)
+            std = (1 - noise_scheduler.alpha_bar[t - 1]) / (1 - alpha_bar_t) * beta_t
+            x_t = mean + torch.sqrt(std) * noise
+        else:
+            x_t = mean
+        if return_intermediate:
+            intermediate_steps.append(x_t.clone().detach())
+    if class_label is not None:
+        x_t_np = x_t.cpu().numpy()
+        plt.figure(figsize=(6, 6))
+        plt.scatter(x_t_np[:, 0], x_t_np[:, 1], alpha=0.6, s=10)
+        plt.xlabel("x1")
+        plt.ylabel("x2")
+        plt.title(f"Sampled Points for Class {class_label}")
+        plt.grid()
+        plt.savefig(f"conditional_samples_class_{class_label}.png")
+        
+    return (x_t if not return_intermediate else intermediate_steps)
+
+
 def sampleCFG(model, n_samples, noise_scheduler, guidance_scale, class_label):
     """
     Sample from the conditional model
@@ -564,7 +676,7 @@ def sampleSVDD(model, n_samples, noise_scheduler, reward_scale, reward_fn):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=['train', 'sample'], default='sample')
+    parser.add_argument("--mode", choices=['train', 'sample', 'train_conditional', 'sample_conditional', 'sample_cfg'], default='sample')
     parser.add_argument("--n_steps", type=int, default=None)
     parser.add_argument("--lbeta", type=float, default=None)
     parser.add_argument("--ubeta", type=float, default=None)
@@ -572,47 +684,95 @@ if __name__ == "__main__":
     parser.add_argument("--n_samples", type=int, default=None)
     parser.add_argument("--batch_size", type=int, default=None)
     parser.add_argument("--lr", type=float, default=None)
-    parser.add_argument("--dataset", type=str, default = None)
-    parser.add_argument("--seed", type=int, default = 42)
-    parser.add_argument("--n_dim", type=int, default = None)
+    parser.add_argument("--dataset", type=str, default=None)
+    parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--n_dim", type=int, default=None)
+    parser.add_argument("--n_classes", type=int, default=2)
+    parser.add_argument("--class_label", type=int, default=0)
+    parser.add_argument("--guidance_scale", type=float, default=1.0)
 
     args = parser.parse_args()
     utils.seed_everything(args.seed)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    run_name = f'exps/ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}' # can include more hyperparams
+    
+    # Define model type based on mode
+    if args.mode in ['train', 'sample']:
+        run_name = f'exps/ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}'
+        model = DDPM(n_dim=args.n_dim, n_steps=args.n_steps)
+    else:  # For conditional modes
+        run_name = f'exps/cond_ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}_{args.n_classes}'
+        model = ConditionalDDPM(n_dim=args.n_dim, n_steps=args.n_steps, n_classes=args.n_classes)
+    
     os.makedirs(run_name, exist_ok=True)
-
-    # model = DDPM(n_dim=args.n_dim, n_steps=args.n_steps)
-    model = ConditionalDDPM(n_dim=args.n_dim, n_steps=args.n_steps, n_classes=2)
-    noise_scheduler = NoiseScheduler(num_timesteps=args.n_steps, beta_start=args.lbeta, beta_end=args.ubeta)
+    noise_scheduler = NoiseScheduler(num_timesteps=args.n_steps, type="linear", beta_start=args.lbeta, beta_end=args.ubeta)
     model = model.to(device)
 
     if args.mode == 'train':
         epochs = args.epochs
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-        data_X, data_y = dataset.load_dataset(args.dataset)
-        # can split the data into train and test -- for evaluation later
+        data_X, _ = dataset.load_dataset(args.dataset)
         data_X = data_X.to(device)
-        if data_y != None:
-            data_y = data_y.to(device)
-        if data_y == None:
-            dataloader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(data_X), batch_size=args.batch_size, shuffle=True)
-        else:
-            print(data_y)
-            dataloader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(data_X, data_y), batch_size=args.batch_size, shuffle=True)
+        dataloader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(data_X), batch_size=args.batch_size, shuffle=True)
         train(model, noise_scheduler, dataloader, optimizer, epochs, run_name)
 
-    elif args.mode == 'sample':
-        print("Sampling code start ", run_name)
+    elif args.mode == 'train_conditional':
+        epochs = args.epochs
+        optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
         data_X, data_y = dataset.load_dataset(args.dataset)
+        if data_y is None:
+            raise ValueError("Conditional training requires labeled data")
+        data_X = data_X.to(device)
+        data_y = data_y.to(device)
+        dataloader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(data_X, data_y), batch_size=args.batch_size, shuffle=True)
+        trainConditional(model, noise_scheduler, dataloader, optimizer, epochs, run_name)
+
+    elif args.mode == 'sample':
+        # Unconditional sampling
+        print(f"Sampling from {run_name}")
+        data_X, _ = dataset.load_dataset(args.dataset)
         model.load_state_dict(torch.load(f'{run_name}/model.pth'))
         samples = sample(model, args.n_samples, noise_scheduler)
-        # we need to print the nll and emd values
-        print("Shape of samples tensor: ", samples.shape, flush=True)
-        print("Shape of data_X tensor: ", data_X.shape, flush=True)
-        # print(samples.shape, data_X.shape, flush=True)
-        # print("Emd: ", get_emd(samples.cpu().numpy(), data_X), flush=True)
-        print("NLL: ", get_nll(data_X.to(device), samples.to(device)), flush=True)
+        print(f"Shape of samples tensor: {samples.shape}")
+        print(f"Shape of data_X tensor: {data_X.shape}")
+        print(f"NLL: {get_nll(data_X.to(device), samples.to(device))}")
         torch.save(samples, f'{run_name}/samples_{args.seed}_{args.n_samples}.pth')
+
+    elif args.mode == 'sample_conditional':
+        print(f"Conditional sampling from {run_name} for class {args.class_label}")
+        data_X, data_y = dataset.load_dataset(args.dataset)
+        model.load_state_dict(torch.load(f'{run_name}/model.pth'))
+        samples = sampleConditional(model, args.n_samples, noise_scheduler, class_label=args.class_label)
+        print(f"Shape of samples tensor: {samples.shape}")
+        if data_y is not None:
+            class_indices = (data_y == args.class_label).nonzero().squeeze()
+            if len(class_indices) > 0:
+                class_data = data_X[class_indices]
+                print(f"Shape of class {args.class_label} data tensor: {class_data.shape}")
+                print(f"Class-specific NLL: {get_nll(class_data.to(device), samples.to(device))}")
+        torch.save(samples, f'{run_name}/conditional_samples_class_{args.class_label}_{args.seed}_{args.n_samples}.pth')
+
+    elif args.mode == 'sample_cfg':
+        print(f"CFG sampling from {run_name} for class {args.class_label} with guidance scale {args.guidance_scale}")
+        data_X, data_y = dataset.load_dataset(args.dataset)
+        model.load_state_dict(torch.load(f'{run_name}/model.pth'))
+        samples = sampleCFG(model, args.n_samples, noise_scheduler, guidance_scale=args.guidance_scale, class_label=args.class_label)
+        print(f"Shape of samples tensor: {samples.shape}")
+        if data_y is not None:
+            class_indices = (data_y == args.class_label).nonzero().squeeze()
+            if len(class_indices) > 0:
+                class_data = data_X[class_indices]
+                print(f"Shape of class {args.class_label} data tensor: {class_data.shape}")
+                print(f"Class-specific NLL: {get_nll(class_data.to(device), samples.to(device))}")
+        samples_np = samples.cpu().numpy()
+        plt.figure(figsize=(6, 6))
+        plt.scatter(samples_np[:, 0], samples_np[:, 1], alpha=0.6, s=10)
+        plt.xlabel("x1")
+        plt.ylabel("x2")
+        plt.title(f"CFG Samples for Class {args.class_label} (scale={args.guidance_scale})")
+        plt.grid()
+        plt.savefig(f"{run_name}/cfg_samples_class_{args.class_label}_scale_{args.guidance_scale}.png")
+        
+        torch.save(samples, f'{run_name}/cfg_samples_class_{args.class_label}_scale_{args.guidance_scale}_{args.seed}_{args.n_samples}.pth')
+    
     else:
         raise ValueError(f"Invalid mode {args.mode}")
