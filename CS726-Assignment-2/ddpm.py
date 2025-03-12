@@ -815,9 +815,9 @@ if __name__ == "__main__":
         plt.scatter(samples_np[:, 0], samples_np[:, 1], alpha=0.6, s=10)
         plt.xlabel("x1")
         plt.ylabel("x2")
-        plt.title(f"Samples for Class {args.class_label}")
+        plt.title(f"Samples for Class {args_name}")
         plt.grid()
-        plt.savefig(f"{run_name}/conditional_samples_class_{args.class_label}.png")
+        plt.savefig(f"Samples for {args_name}.png")
         
         torch.save(samples, f'{run_name}/conditional_samples_class_{args.class_label}_{args.seed}_{args.n_samples}.pth')
 
