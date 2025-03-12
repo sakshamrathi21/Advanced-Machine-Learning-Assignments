@@ -548,7 +548,7 @@ def sample(model, n_samples, noise_scheduler, return_intermediate=False):
     plt.title("Final Sampled Points")
     plt.grid()
     plt.axis('equal')
-    plt.savefig("moon.png")
+    plt.savefig("images/moon.png")
     return (x_t if not return_intermediate else intermediate_steps)
 
 @torch.no_grad()
@@ -607,7 +607,7 @@ def sampleConditional(model, n_samples, noise_scheduler, class_label=None, retur
         plt.title(f"Sampled Points for Class {class_label}")
         plt.grid()
         plt.axis('equal')
-        plt.savefig(f"conditional_samples_class_{class_label}.png")
+        plt.savefig(f"images/conditional_samples_class_{class_label}.png")
         
     return (x_t if not return_intermediate else intermediate_steps)
 
@@ -832,7 +832,7 @@ if __name__ == "__main__":
         plt.title(f"Samples for {args.dataset})")
         plt.grid()
         plt.axis('equal')
-        plt.savefig(f"Samples for {args_name}.png")
+        plt.savefig(f"images/Samples for {args_name}.png")
         torch.save(samples, f'{run_name}/samples_{args.seed}_{args.n_samples}.pth')
 
     elif args.mode == 'sample_conditional':
@@ -856,7 +856,7 @@ if __name__ == "__main__":
         plt.title(f"Samples for Class {args_name}")
         plt.grid()
         plt.axis('equal')
-        plt.savefig(f"Samples for {args_name}.png")
+        plt.savefig(f"images/Samples for {args_name}.png")
         
         torch.save(samples, f'{run_name}/conditional_samples_class_{args.class_label}_{args.seed}_{args.n_samples}.pth')
 
@@ -899,7 +899,7 @@ if __name__ == "__main__":
         plt.legend()
         plt.grid(True)
         plt.axis('equal')
-        plt.savefig(f"Samples for {args_name}.png")
+        plt.savefig(f"images/Samples for {args_name}.png")
         plt.close()
         if data_y is not None:
             for class_label in range(args.n_classes):
@@ -947,7 +947,7 @@ if __name__ == "__main__":
         plt.legend()
         plt.grid(True)
         plt.axis('equal')
-        plt.savefig(f"Samples - CFG for {args_name}.png")
+        plt.savefig(f"images/Samples - CFG for {args_name}.png")
         plt.close()
         if data_y is not None:
             for class_label in range(args.n_classes):
