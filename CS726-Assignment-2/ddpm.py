@@ -308,7 +308,7 @@ class DDPM(nn.Module):
         """
         return self.model(x, t)
 
-class ConditionalDDPM():
+class ConditionalDDPM(nn.Module):
     def __init__(self, n_dim = 3, n_steps = 200, n_classes = 10):
         super().__init__()
         self.n_dim = n_dim
@@ -748,9 +748,11 @@ if __name__ == "__main__":
 
     if args.mode in ['train', 'sample']:
         run_name = f'exps/ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}'
+        args_name = f'ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}'
         model = DDPM(n_dim=args.n_dim, n_steps=args.n_steps)
     else:  
         run_name = f'exps/cond_ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}_{args.n_classes}'
+        args_name = f'cond_ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}'
         model = ConditionalDDPM(n_dim=args.n_dim, n_steps=args.n_steps, n_classes=args.n_classes)
     
     os.makedirs(run_name, exist_ok=True)
@@ -792,7 +794,7 @@ if __name__ == "__main__":
         plt.ylabel("x2")
         plt.title(f"Samples for {args.dataset})")
         plt.grid()
-        plt.savefig(f"Samples for {args.dataset}_{run_name}).png")
+        plt.savefig(f"Samples for {args_name}.png")
         torch.save(samples, f'{run_name}/samples_{args.seed}_{args.n_samples}.pth')
 
     elif args.mode == 'sample_conditional':
