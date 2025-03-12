@@ -689,7 +689,7 @@ def sampleCFG(model, n_samples, noise_scheduler, guidance_scale, class_label):
         t_tensor = torch.full((n_samples,), t, device=device, dtype=torch.long)
         noise_pred_conditional = model(x_t, t_tensor, class_labels)
         noise_pred_unconditional = model(x_t, t_tensor, None)
-        noise_pred = noise_pred_unconditional + guidance_scale * (noise_pred_conditional - noise_pred_unconditional)
+        noise_pred = -guidance_scale * noise_pred_unconditional + (1 + guidance_scale) * noise_pred_conditional
         alpha_bar_t = noise_scheduler.alpha_bar[t]
         alpha_t = noise_scheduler.alphas[t]
         beta_t = noise_scheduler.betas[t]
