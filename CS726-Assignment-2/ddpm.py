@@ -789,7 +789,7 @@ if __name__ == "__main__":
         print(f"NLL: {get_nll(data_X.to(device), samples.to(device))}")
         samples = samples.cpu().numpy()
         plt.figure(figsize=(6, 6))
-        plt.scatter(samples[:, 0], samples[:, 1], alpha=0.6, s=10)
+        plt.scatter(samples[:, 0], samples[:, 1], alpha=0.6, s=1)
         plt.xlabel("x1")
         plt.ylabel("x2")
         plt.title(f"Samples for {args.dataset})")
@@ -812,7 +812,7 @@ if __name__ == "__main__":
                 print(f"Class-specific NLL: {get_nll(class_data.to(device), samples.to(device))}")
     
         plt.figure(figsize=(6, 6))
-        plt.scatter(samples_np[:, 0], samples_np[:, 1], alpha=0.6, s=10)
+        plt.scatter(samples_np[:, 0], samples_np[:, 1], alpha=0.6, s=1)
         plt.xlabel("x1")
         plt.ylabel("x2")
         plt.title(f"Samples for Class {args_name}")
