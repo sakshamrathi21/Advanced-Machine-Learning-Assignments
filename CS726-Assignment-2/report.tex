@@ -1,0 +1,83 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage{xcolor}
+\usepackage{algorithm}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{titlesec}
+\usepackage{tikz}
+\usepackage{booktabs}
+\usepackage{array}
+\usetikzlibrary{positioning,arrows.meta} % Load the positioning library
+
+\usetikzlibrary{shadows}
+\usepackage{tcolorbox}
+\usepackage{float}
+\usepackage{lipsum}
+\usepackage{mdframed}
+\usepackage{pagecolor}
+\usepackage{mathpazo}   % Palatino font (serif)
+\usepackage{microtype}  % Better typography
+
+% Page background color
+\pagecolor{gray!10!white}
+
+% Geometry settings
+\geometry{margin=0.5in}
+\pagestyle{fancy}
+\fancyhf{}
+
+% Fancy header and footer
+\fancyhead[C]{\textbf{\color{blue!80}CS726 Programming Assignment -- 2 Report}}
+\fancyhead[R]{\color{blue!80}Bayesian Bunch}
+\fancyfoot[C]{\thepage}
+
+% Custom Section Color and Format with Sans-serif font
+\titleformat{\section}
+{\sffamily\color{purple!90!black}\normalfont\Large\bfseries}
+{\thesection}{1em}{}
+
+% Custom subsection format
+\titleformat{\subsection}
+{\sffamily\color{cyan!80!black}\normalfont\large\bfseries}
+{\thesubsection}{1em}{}
+
+% Stylish Title with TikZ (Enhanced with gradient)
+\newcommand{\cooltitle}[1]{%
+  \begin{tikzpicture}
+    \node[fill=blue!20,rounded corners=10pt,inner sep=12pt, drop shadow, top color=blue!50, bottom color=blue!30] (box)
+    {\Huge \bfseries \color{black} #1};
+  \end{tikzpicture}
+}
+\usepackage{float} % Add this package
+
+\newenvironment{solution}[2][]{%
+    \begin{mdframed}[linecolor=blue!70!black, linewidth=2pt, roundcorner=10pt, backgroundcolor=yellow!10!white, skipabove=12pt, skipbelow=12pt]%
+        \textbf{\large #2}
+        \par\noindent\rule{\textwidth}{0.4pt}
+}{
+    \end{mdframed}
+}
+
+% Document title
+\title{\cooltitle{CS726 Programming Assignment -- 2 Report}}
+\author{
+\textbf{Saksham Rathi (22B1003)}\\
+\textbf{Sharvanee Sonawane (22B0943)}\\
+\textbf{Deeksha Dhiwakar (22B0988)}\\
+\small Department of Computer Science, \\
+Indian Institute of Technology Bombay \\}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section*{}
+
+
+
+\end{document}
