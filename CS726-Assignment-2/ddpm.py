@@ -465,6 +465,7 @@ def train(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
     plt.ylabel("Loss")
     plt.title("Training Loss Curve")
     plt.grid(True)
+    
     plt.savefig(os.path.join(run_name, "loss_curve.png"))
 
 
@@ -519,6 +520,7 @@ def sample(model, n_samples, noise_scheduler, return_intermediate=False):
     plt.ylabel("x2")
     plt.title("Final Sampled Points")
     plt.grid()
+    plt.axis('equal')
     plt.savefig("moon.png")
     return (x_t if not return_intermediate else intermediate_steps)
 
@@ -577,6 +579,7 @@ def sampleConditional(model, n_samples, noise_scheduler, class_label=None, retur
         plt.ylabel("x2")
         plt.title(f"Sampled Points for Class {class_label}")
         plt.grid()
+        plt.axis('equal')
         plt.savefig(f"conditional_samples_class_{class_label}.png")
         
     return (x_t if not return_intermediate else intermediate_steps)
@@ -627,6 +630,7 @@ def sampleMultipleClasses(model, n_samples_per_class, noise_scheduler, n_classes
     plt.title(f"Samples from Conditional DDPM for All Classes")
     plt.legend()
     plt.grid(True)
+    plt.axis('equal')
     plt.savefig(f"{run_name}/multi_class_samples.png")
     plt.close()
     
@@ -794,6 +798,7 @@ if __name__ == "__main__":
         plt.ylabel("x2")
         plt.title(f"Samples for {args.dataset})")
         plt.grid()
+        plt.axis('equal')
         plt.savefig(f"Samples for {args_name}.png")
         torch.save(samples, f'{run_name}/samples_{args.seed}_{args.n_samples}.pth')
 
@@ -817,6 +822,7 @@ if __name__ == "__main__":
         plt.ylabel("x2")
         plt.title(f"Samples for Class {args.class_label}")
         plt.grid()
+        plt.axis('equal')
         plt.savefig(f"{run_name}/conditional_samples_class_{args.class_label}.png")
         
         torch.save(samples, f'{run_name}/conditional_samples_class_{args.class_label}_{args.seed}_{args.n_samples}.pth')
@@ -859,6 +865,7 @@ if __name__ == "__main__":
         plt.ylabel("x2")
         plt.title(f"CFG Samples for Class {args.class_label} (scale={args.guidance_scale})")
         plt.grid()
+        plt.axis('equal')
         plt.savefig(f"{run_name}/cfg_samples_class_{args.class_label}_scale_{args.guidance_scale}.png")
         
         torch.save(samples, f'{run_name}/cfg_samples_class_{args.class_label}_scale_{args.guidance_scale}_{args.seed}_{args.n_samples}.pth')
