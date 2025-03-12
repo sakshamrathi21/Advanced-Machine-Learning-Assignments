@@ -727,7 +727,7 @@ def sampleSVDD(model, n_samples, noise_scheduler, reward_scale, reward_fn):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=['train', 'sample', 'train_conditional', 'sample_conditional', 'sample_cfg'], default='sample')
+    parser.add_argument("--mode", choices=['train', 'sample', 'train_conditional', 'sample_conditional', 'sample_cfg', 'sample_multi_class'], default='sample')
     parser.add_argument("--n_steps", type=int, default=None)
     parser.add_argument("--lbeta", type=float, default=None)
     parser.add_argument("--ubeta", type=float, default=None)
