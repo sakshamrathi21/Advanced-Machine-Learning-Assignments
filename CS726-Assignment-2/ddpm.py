@@ -258,7 +258,6 @@ class NoiseScheduler():
         **kwargs: additional arguments for the scheduler
 
     This object sets up all the constants like alpha, beta, sigma, etc. required for the DDPM model
-    
     """
     def __init__(self, num_timesteps=50, type="linear", **kwargs):
 
@@ -267,21 +266,49 @@ class NoiseScheduler():
 
         if type == "linear":
             self.init_linear_schedule(**kwargs)
+        elif type == "cosine":
+            self.init_cosine_schedule(**kwargs)
+        elif type == "sigmoid":
+            self.init_sigmoid_schedule(**kwargs)
         else:
-            raise NotImplementedError(f"{type} scheduler is not implemented") # change this if you implement additional schedulers
+            raise NotImplementedError(f"{type} scheduler is not implemented")
 
 
     def init_linear_schedule(self, beta_start, beta_end):
         """
-        Precompute whatever quantities are required for training and sampling
+        Precompute whatever quantities are required for training and sampling with linear noise schedule
+        """
+        self.betas = torch.linspace(beta_start, beta_end, self.num_timesteps, dtype=torch.float32)
+        self.alphas = 1.0 - self.betas
+        self.alpha_bar = torch.cumprod(self.alphas, 0)
+
+    def init_cosine_schedule(self, beta_start, beta_end, s=0.008):
+        """
+        Precompute whatever quantities are required for training and sampling with cosine noise schedule
         """
 
-        self.betas = torch.linspace(beta_start, beta_end, self.num_timesteps, dtype=torch.float32)
+        steps = torch.linspace(0, self.num_timesteps, self.num_timesteps + 1, dtype=torch.float32)
+        alphas_bar = torch.cos(((steps / self.num_timesteps) + s) / (1 + s) * (torch.acos(torch.tensor(-1.0)) / 2)) ** 2
+        self.alpha_bar = alphas_bar / alphas_bar[0]  # Normalize to start at 1
+        self.alphas = self.alpha_bar[1:] / self.alpha_bar[:-1]
+        self.betas = 1.0 - self.alphas
+        self.betas = torch.clip(self.betas, beta_start, beta_end)
+        self.alphas = 1.0 - self.betas
+        self.alpha_bar = torch.cumprod(self.alphas, 0)
+
+    def init_sigmoid_schedule(self, beta_start=0.0001, beta_end=0.02, k=10):
+        """
+        Precompute whatever quantities are required for training and sampling with sigmoid noise schedule
+        """
+        steps = torch.linspace(-k, k, self.num_timesteps, dtype=torch.float32)
+        sigmoid = torch.sigmoid(steps)
+        self.betas = beta_start + (beta_end - beta_start) * sigmoid
         self.alphas = 1.0 - self.betas
         self.alpha_bar = torch.cumprod(self.alphas, 0)
 
     def __len__(self):
         return self.num_timesteps
+
     
 class DDPM(nn.Module):
     def __init__(self, n_dim=3, n_steps=200):
@@ -502,6 +529,7 @@ def sample(model, n_samples, noise_scheduler, return_intermediate=False):
         alpha_bar_t = noise_scheduler.alpha_bar[t]
         alpha_t = noise_scheduler.alphas[t]
         beta_t = noise_scheduler.betas[t]
+
         mean = (1 / torch.sqrt(alpha_t)) * (x_t - ((1 - alpha_t) / torch.sqrt(1 - alpha_bar_t)) * noise_pred)
         if t > 1:
             noise = torch.randn_like(x_t, device=device)
@@ -732,6 +760,7 @@ def sampleSVDD(model, n_samples, noise_scheduler, reward_scale, reward_fn):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=['train', 'sample', 'train_conditional', 'sample_conditional', 'sample_cfg', 'sample_multi_class'], default='sample')
+    parser.add_argument("--noise_schedule", choices=['linear', 'cosine', 'sigmoid'], default='linear')
     parser.add_argument("--n_steps", type=int, default=None)
     parser.add_argument("--lbeta", type=float, default=None)
     parser.add_argument("--ubeta", type=float, default=None)
@@ -751,16 +780,23 @@ if __name__ == "__main__":
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     if args.mode in ['train', 'sample']:
-        run_name = f'exps/ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}'
-        args_name = f'ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}'
+        run_name = f'exps/ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}_{args.noise_schedule}'
+        args_name = f'ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}_{args.noise_schedule}'
         model = DDPM(n_dim=args.n_dim, n_steps=args.n_steps)
     else:  
-        run_name = f'exps/cond_ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}_{args.n_classes}'
-        args_name = f'cond_ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}_{args.guidance_scale}'
+        run_name = f'exps/cond_ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}_{args.n_classes}_{args.noise_schedule}'
+        args_name = f'cond_ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}_{args.guidance_scale}_{args.noise_schedule}'
         model = ConditionalDDPM(n_dim=args.n_dim, n_steps=args.n_steps, n_classes=args.n_classes)
     
     os.makedirs(run_name, exist_ok=True)
-    noise_scheduler = NoiseScheduler(num_timesteps=args.n_steps, type="linear", beta_start=args.lbeta, beta_end=args.ubeta)
+    if (args.noise_schedule == 'linear'):
+        noise_scheduler = NoiseScheduler(num_timesteps=args.n_steps, type="linear", beta_start=args.lbeta, beta_end=args.ubeta)
+    elif (args.noise_schedule == 'cosine'):
+        noise_scheduler = NoiseScheduler(num_timesteps=args.n_steps, type="cosine", beta_start=args.lbeta, beta_end=args.ubeta)
+    elif (args.noise_schedule == 'sigmoid'):
+        noise_scheduler = NoiseScheduler(num_timesteps=args.n_steps, type="sigmoid", beta_start=args.lbeta, beta_end=args.ubeta)
+    else:
+        raise ValueError("Invalid noise schedule type")
     model = model.to(device)
 
     if args.mode == 'train':
