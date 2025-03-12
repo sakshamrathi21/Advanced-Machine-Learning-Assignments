@@ -258,6 +258,7 @@ class NoiseScheduler():
         **kwargs: additional arguments for the scheduler
 
     This object sets up all the constants like alpha, beta, sigma, etc. required for the DDPM model
+    
     """
     def __init__(self, num_timesteps=50, type="linear", **kwargs):
 
@@ -271,12 +272,12 @@ class NoiseScheduler():
         elif type == "sigmoid":
             self.init_sigmoid_schedule(**kwargs)
         else:
-            raise NotImplementedError(f"{type} scheduler is not implemented")
+            raise NotImplementedError(f"{type} scheduler is not implemented") # change this if you implement additional schedulers
 
 
     def init_linear_schedule(self, beta_start, beta_end):
         """
-        Precompute whatever quantities are required for training and sampling with linear noise schedule
+        Precompute whatever quantities are required for training and sampling
         """
         self.betas = torch.linspace(beta_start, beta_end, self.num_timesteps, dtype=torch.float32)
         self.alphas = 1.0 - self.betas
@@ -308,7 +309,6 @@ class NoiseScheduler():
 
     def __len__(self):
         return self.num_timesteps
-
     
 class DDPM(nn.Module):
     def __init__(self, n_dim=3, n_steps=200):
@@ -529,7 +529,6 @@ def sample(model, n_samples, noise_scheduler, return_intermediate=False):
         alpha_bar_t = noise_scheduler.alpha_bar[t]
         alpha_t = noise_scheduler.alphas[t]
         beta_t = noise_scheduler.betas[t]
-
         mean = (1 / torch.sqrt(alpha_t)) * (x_t - ((1 - alpha_t) / torch.sqrt(1 - alpha_bar_t)) * noise_pred)
         if t > 1:
             noise = torch.randn_like(x_t, device=device)
@@ -664,7 +663,7 @@ def sampleMultipleClasses(model, n_samples_per_class, noise_scheduler, n_classes
     
     return all_samples
 
-
+@torch.no_grad()
 def sampleCFG(model, n_samples, noise_scheduler, guidance_scale, class_label):
     """
     Sample from the conditional model
@@ -824,8 +823,6 @@ if __name__ == "__main__":
         data_X, _ = dataset.load_dataset(args.dataset)
         model.load_state_dict(torch.load(f'{run_name}/model.pth'))
         samples = sample(model, args.n_samples, noise_scheduler)
-        print(f"Shape of samples tensor: {samples.shape}")
-        print(f"Shape of data_X tensor: {data_X.shape}")
         print(f"NLL: {get_nll(data_X.to(device), samples.to(device))}")
         samples = samples.cpu().numpy()
         plt.figure(figsize=(6, 6))
@@ -921,25 +918,50 @@ if __name__ == "__main__":
         print(f"CFG sampling from {run_name} for class {args.class_label} with guidance scale {args.guidance_scale}")
         data_X, data_y = dataset.load_dataset(args.dataset)
         model.load_state_dict(torch.load(f'{run_name}/model.pth'))
-        samples = sampleCFG(model, args.n_samples, noise_scheduler, guidance_scale=args.guidance_scale, class_label=args.class_label)
-        print(f"Shape of samples tensor: {samples.shape}")
-        if data_y is not None:
-            class_indices = (data_y == args.class_label).nonzero().squeeze()
-            if len(class_indices) > 0:
-                class_data = data_X[class_indices]
-                print(f"Shape of class {args.class_label} data tensor: {class_data.shape}")
-                print(f"Class-specific NLL: {get_nll(class_data.to(device), samples.to(device))}")
-        samples_np = samples.cpu().numpy()
-        plt.figure(figsize=(6, 6))
-        plt.scatter(samples_np[:, 0], samples_np[:, 1], alpha=0.6, s=10)
+        samples_per_class = args.n_samples // args.n_classes
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        all_samples = {}
+        n_classes = args.n_classes
+        n_samples_per_class = args.n_samples // args.n_classes
+        colors = plt.cm.get_cmap('tab10', n_classes)
+        
+        plt.figure(figsize=(10, 8))
+        
+        for class_label in range(n_classes):
+            samples = sampleCFG(model, args.n_samples, noise_scheduler, guidance_scale=args.guidance_scale, class_label=class_label)
+        
+            all_samples[class_label] = samples
+            samples_np = samples.cpu().numpy()
+            plt.scatter(
+                samples_np[:, 0], 
+                samples_np[:, 1], 
+                alpha=0.7, 
+                s=15, 
+                color=colors(class_label),
+                label=f"Class {class_label}"
+            )
+        
         plt.xlabel("x1")
         plt.ylabel("x2")
-        plt.title(f"CFG Samples for Class {args.class_label} (scale={args.guidance_scale})")
-        plt.grid()
+        plt.title(f"Samples from Conditional DDPM for All Classes")
+        plt.legend()
+        plt.grid(True)
         plt.axis('equal')
-        plt.savefig(f"{run_name}/cfg_samples_class_{args.class_label}_scale_{args.guidance_scale}.png")
+        plt.savefig(f"Samples - CFG for {args_name}.png")
+        plt.close()
+        if data_y is not None:
+            for class_label in range(args.n_classes):
+                class_indices = (data_y == class_label).nonzero().squeeze()
+                if len(class_indices) > 0:
+                    class_data = data_X[class_indices]
+                    class_samples = all_samples[class_label]
+                    print(f"Class {class_label}:")
+                    print(f"  - Shape of ground truth data: {class_data.shape}")
+                    print(f"  - Shape of generated samples: {class_samples.shape}")
+                    print(f"  - Class-specific NLL: {get_nll(class_data.to(device), class_samples)}")
+        all_samples_tensor = torch.cat([samples for samples in all_samples.values()], dim=0)
         
-        torch.save(samples, f'{run_name}/cfg_samples_class_{args.class_label}_scale_{args.guidance_scale}_{args.seed}_{args.n_samples}.pth')
+        torch.save(all_samples_tensor, f'{run_name}/cfg_samples_class_{args.class_label}_scale_{args.guidance_scale}_{args.seed}_{args.n_samples}.pth')
     
     else:
         raise ValueError(f"Invalid mode {args.mode}")
