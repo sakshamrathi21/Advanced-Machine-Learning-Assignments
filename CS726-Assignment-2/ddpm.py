@@ -823,7 +823,6 @@ if __name__ == "__main__":
         plt.title(f"Samples for Class {args_name}")
         plt.grid()
         plt.axis('equal')
-        plt.savefig(f"{run_name}/conditional_samples_class_{args.class_label}.png")
         plt.savefig(f"Samples for {args_name}.png")
         
         torch.save(samples, f'{run_name}/conditional_samples_class_{args.class_label}_{args.seed}_{args.n_samples}.pth')
@@ -833,7 +832,42 @@ if __name__ == "__main__":
         data_X, data_y = dataset.load_dataset(args.dataset)
         model.load_state_dict(torch.load(f'{run_name}/model.pth'))
         samples_per_class = args.n_samples // args.n_classes
-        all_samples = sampleMultipleClasses(model, samples_per_class, noise_scheduler, args.n_classes, run_name)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        all_samples = {}
+        n_classes = args.n_classes
+        n_samples_per_class = args.n_samples // args.n_classes
+        colors = plt.cm.get_cmap('tab10', n_classes)
+        
+        plt.figure(figsize=(10, 8))
+        
+        for class_label in range(n_classes):
+            samples = sampleConditional(
+                model, 
+                n_samples_per_class, 
+                noise_scheduler, 
+                class_label=class_label, 
+                save_plot=False
+            )
+        
+            all_samples[class_label] = samples
+            samples_np = samples.cpu().numpy()
+            plt.scatter(
+                samples_np[:, 0], 
+                samples_np[:, 1], 
+                alpha=0.7, 
+                s=15, 
+                color=colors(class_label),
+                label=f"Class {class_label}"
+            )
+        
+        plt.xlabel("x1")
+        plt.ylabel("x2")
+        plt.title(f"Samples from Conditional DDPM for All Classes")
+        plt.legend()
+        plt.grid(True)
+        plt.axis('equal')
+        plt.savefig(f"Samples for {args_name}.png")
+        plt.close()
         if data_y is not None:
             for class_label in range(args.n_classes):
                 class_indices = (data_y == class_label).nonzero().squeeze()
