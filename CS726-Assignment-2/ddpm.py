@@ -745,12 +745,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     utils.seed_everything(args.seed)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    
-    # Define model type based on mode
+
     if args.mode in ['train', 'sample']:
         run_name = f'exps/ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}'
         model = DDPM(n_dim=args.n_dim, n_steps=args.n_steps)
-    else:  # For conditional modes
+    else:  
         run_name = f'exps/cond_ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}_{args.n_classes}'
         model = ConditionalDDPM(n_dim=args.n_dim, n_steps=args.n_steps, n_classes=args.n_classes)
     
