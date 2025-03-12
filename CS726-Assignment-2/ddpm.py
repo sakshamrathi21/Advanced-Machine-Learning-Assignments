@@ -825,6 +825,19 @@ if __name__ == "__main__":
         samples = sample(model, args.n_samples, noise_scheduler)
         print(f"NLL: {get_nll(data_X.to(device), samples.to(device))}")
         samples = samples.cpu().numpy()
+        if args.n_dim == 3:
+            from mpl_toolkits.mplot3d import Axes3D
+            fig = plt.figure(figsize=(8, 8))
+            ax = fig.add_subplot(111, projection='3d')
+
+            ax.scatter(samples[:, 0], samples[:, 1], samples[:, 2], alpha=0.6, s=1)
+
+            ax.set_xlabel("x1")
+            ax.set_ylabel("x2")
+            ax.set_zlabel("x3")
+            ax.set_title(f"3D Samples for Class {args_name}")
+            plt.savefig(f"images/Samples for {args_name}.png")
+            exit(0)
         plt.figure(figsize=(6, 6))
         plt.scatter(samples[:, 0], samples[:, 1], alpha=0.6, s=1)
         plt.xlabel("x1")
