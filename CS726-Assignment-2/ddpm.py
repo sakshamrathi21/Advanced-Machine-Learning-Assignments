@@ -726,7 +726,9 @@ if __name__ == "__main__":
         epochs = args.epochs
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
         data_X, _ = dataset.load_dataset(args.dataset)
+        samples = data_X
         data_X = data_X.to(device)
+
         dataloader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(data_X), batch_size=args.batch_size, shuffle=True)
         train(model, noise_scheduler, dataloader, optimizer, epochs, run_name)
 
@@ -762,14 +764,16 @@ if __name__ == "__main__":
             ax.set_title(f"3D Samples for Class {args_name}")
             plt.savefig(f"images/Samples for {args_name}.png")
             exit(0)
+        # samples = data_X.cpu().numpy()
         plt.figure(figsize=(6, 6))
         plt.scatter(samples[:, 0], samples[:, 1], alpha=0.6, s=1)
         plt.xlabel("x1")
         plt.ylabel("x2")
-        plt.title(f"Samples for {args.dataset})")
+        plt.title(f"Samples for {args.dataset}")
         plt.grid()
         plt.axis('equal')
         plt.savefig(f"images/Samples for {args_name}.png")
+        # plt.savefig(f"images/{args.dataset}.png")
         torch.save(samples, f'{run_name}/samples_{args.seed}_{args.n_samples}.pth')
 
     elif args.mode == 'sample_conditional':
