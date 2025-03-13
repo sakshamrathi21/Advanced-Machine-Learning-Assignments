@@ -313,7 +313,77 @@ class ClassifierDDPM():
             class_scores[:, c] = -error
         probs = F.softmax(class_scores, dim=1)
         return probs
+
+class Classifier(nn.Module):
+    def __init__(self, n_dim=3, n_classes=10):
+        super().__init__()
+        self.network = nn.Sequential(
+            nn.Linear(n_dim, 128),
+            nn.ReLU(),
+            nn.Linear(128, 256),
+            nn.ReLU(),
+            nn.Linear(256, 128),
+            nn.ReLU(),
+            nn.Linear(128, n_classes)
+        )
+    def forward(self, x):
+        return self.network(x)
     
+    def predict(self, x):
+        logits = self.forward(x)
+        return torch.argmax(logits, dim=1)
+    
+    def predict_proba(self, x):
+        logits = self.forward(x)
+        return F.softmax(logits, dim=1)
+    
+def train_classifier(model, train_loader, test_loader, n_epochs=30, lr=1e-3):
+    device = next(model.parameters()).device
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    criterion = nn.CrossEntropyLoss()
+    
+    for epoch in range(n_epochs):
+        model.train()
+        train_loss = 0
+        correct = 0
+        total = 0
+        
+        for batch_idx, (inputs, targets) in enumerate(train_loader):
+            inputs, targets = inputs.to(device), targets.to(device)
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = criterion(outputs, targets)
+            loss.backward()
+            optimizer.step()
+            
+            train_loss += loss.item()
+            _, predicted = outputs.max(1)
+            total += targets.size(0)
+            correct += predicted.eq(targets).sum().item()
+        
+        train_acc = 100. * correct / total
+        model.eval()
+        test_loss = 0
+        correct = 0
+        total = 0
+        
+        with torch.no_grad():
+            for batch_idx, (inputs, targets) in enumerate(test_loader):
+                inputs, targets = inputs.to(device), targets.to(device)
+                outputs = model(inputs)
+                loss = criterion(outputs, targets)
+                
+                test_loss += loss.item()
+                _, predicted = outputs.max(1)
+                total += targets.size(0)
+                correct += predicted.eq(targets).sum().item()
+        
+        test_acc = 100. * correct / total
+        
+        print(f'Epoch: {epoch+1}/{n_epochs} | Train Loss: {train_loss/len(train_loader):.3f} | Train Acc: {train_acc:.3f}% | Test Loss: {test_loss/len(test_loader):.3f} | Test Acc: {test_acc:.3f}%')
+    
+    return model
+
 def trainConditional(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
     """
     Train the model and save the model and necessary plots
@@ -678,6 +748,61 @@ def sampleSVDD(model, n_samples, noise_scheduler, reward_scale, reward_fn):
             x_t = mean
     
     return x_t
+
+
+def evaluate_with_guidance_scales(model, classifier, dataset, guidance_scales=[0, 1, 2, 5, 10]):
+    results = {}
+    for scale in guidance_scales:
+        print(f"Evaluating with guidance scale: {scale}")
+        samples = []
+        labels = []
+        for class_label in range(model.n_classes):
+            class_samples = sampleConditional(
+                model, 
+                n_samples=100,
+                class_label=class_label,
+                guidance_scale=scale
+            )
+            samples.append(class_samples)
+            labels.extend([class_label] * 100)
+        samples = torch.cat(samples, dim=0)
+        labels = torch.tensor(labels, device=samples.device)
+        with torch.no_grad():
+            predicted = classifier(samples).argmax(dim=1)
+            accuracy = (predicted == labels).float().mean().item()
+        
+        results[scale] = {
+            "accuracy": accuracy,
+        }
+        
+        print(f"Guidance scale {scale}: Classifier accuracy = {accuracy:.4f}")
+    
+    return results
+
+
+def compare_classifiers(standard_classifier, ddpm_classifier, test_loader):
+    device = next(standard_classifier.parameters()).device
+    
+    standard_correct = 0
+    ddpm_correct = 0
+    total = 0
+    
+    with torch.no_grad():
+        for inputs, targets in tqdm(test_loader):
+            inputs, targets = inputs.to(device), targets.to(device)
+            total += targets.size(0)
+            standard_preds = standard_classifier.predict(inputs)
+            standard_correct += (standard_preds == targets).sum().item()
+            ddpm_preds = ddpm_classifier.predict(inputs)
+            ddpm_correct += (ddpm_preds == targets).sum().item()
+    
+    standard_acc = 100. * standard_correct / total
+    ddpm_acc = 100. * ddpm_correct / total
+    
+    print(f"Standard Classifier Accuracy: {standard_acc:.2f}%")
+    print(f"DDPM Classifier Accuracy: {ddpm_acc:.2f}%")
+    
+    return standard_acc, ddpm_acc
     
 
 if __name__ == "__main__":
