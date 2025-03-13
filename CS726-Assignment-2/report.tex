@@ -76,7 +76,67 @@ Indian Institute of Technology Bombay \\}
 \begin{document}
 \maketitle
 
-\section*{}
+\section*{Denoising Diffusion Probabilistic Models}
+
+Here are the results of unconditional DDPMs on various datasets (with respect to the number of time steps). We had fixed all other parameters (the best settings observed):
+
+\begin{itemize}
+  \item lbeta=0.0001
+  \item ubeta=0.02
+  \item lr=0.0001 (so that training loss decreases across epochs)
+  \item n\_samples=10000
+  \item n\_dim=2 (for helix it is 3)
+  \item batch\_size=128 (to avoid CUDA memory errors and optimal results)
+  \item epochs=40
+\end{itemize}
+
+\subsection*{Moons}
+
+\begin{figure}[h]
+  \centering
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{moon1.jpg}
+      \subcaption{Moon 1}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{moon2.jpg}
+      \subcaption{Moon 2}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{moon3.jpg}
+      \subcaption{Moon 3}
+  \end{minipage}
+
+  \vspace{0.5cm}  % Adjust vertical spacing
+
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{moon4.jpg}
+      \subcaption{Moon 4}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{moon5.jpg}
+      \subcaption{Moon 5}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      % Empty cell
+  \end{minipage}
+
+  \caption{Five images of moons arranged in a 3×2 grid.}
+\end{figure}
+
+
+
+\section*{Classifier-Free Guidance}
+
+\section*{Reward Guidance}
+
+
 
 
 
