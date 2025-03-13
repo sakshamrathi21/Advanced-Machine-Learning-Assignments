@@ -371,7 +371,69 @@ As we can see from the images (and the NLL values), 50 performs the best.
 
 \section*{Classifier-Free Guidance}
 
+\subsection*{Difference between Guided Sampling and Conditional Sampling}
+In conditional sampling, we model $p(x|y)$ directly, where $y$ is a conditioning variable (like a class label). During generation, we sample from this conditional distribution to get samples that match the condition.
 
+In guided sampling (specifically classifier-free guidance), we train two models: one conditional $p(x|y)$ and one unconditional $p(x)$. During sampling, we interpolate between them with a guidance scale w:
+\[\epsilon_\theta(x_t, t, y) = (1+w) * \epsilon_\theta(x_t, t, y) - w * \epsilon_\theta(x_t, t)\]
+Firstly, guided sampling is more expensive in terms of computation required to train and sample points (almost double, since we are training two models, and using both of them to sample points). However, this guidance increases the impact of the conditioning information and can produce higher quality samples that better match the condition, but with a potential loss of diversity.
+
+\subsection*{Effect of guidance scale}
+We sampled points using CFG on a variety of guidance scale values, here are the images from the moon dataset:
+
+\begin{figure}[h]
+  \centering
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/moon.jpg}
+      \subcaption{Original Moons Dataset}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples - CFG for cond_ddpm_2_50_0.0001_0.02_moons_0.0_sigmoid.png"}
+      \subcaption{Guidance Scale = 0 (Equivalent to Conditional Sampling)}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples - CFG for cond_ddpm_2_50_0.0001_0.02_moons_0.2_sigmoid.png"}
+      \subcaption{Guidance Scale = 0.2}
+  \end{minipage}
+
+  \vspace{0.5cm}
+
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples - CFG for cond_ddpm_2_50_0.0001_0.02_moons_0.5_sigmoid.png"}
+      \subcaption{Guidance Scale = 0.5}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples - CFG for cond_ddpm_2_50_0.0001_0.02_moons_0.7_sigmoid.png"}
+      \subcaption{Guidance Scale = 0.7}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples - CFG for cond_ddpm_2_50_0.0001_0.02_moons_1.0_sigmoid.png"}
+    \subcaption{Guidance Scale = 1.0}
+  \end{minipage}
+
+  \vspace{0.5cm}
+
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples - CFG for cond_ddpm_2_50_0.0001_0.02_moons_2.0_sigmoid.png"}
+      \subcaption{Guidance Scale = 2.0}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples - CFG for cond_ddpm_2_50_0.0001_0.02_moons_4.0_sigmoid.png"}
+      \subcaption{Guidance Scale = 4.0}
+  \end{minipage}
+
+  \caption{Moons - CFG}
+\end{figure}
+
+\clearpage
 \section*{Reward Guidance}
 
 
