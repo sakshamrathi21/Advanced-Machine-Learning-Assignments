@@ -7,6 +7,7 @@
 \usepackage{geometry}
 \usepackage{fancyhdr}
 \usepackage{graphicx}
+\usepackage{subcaption}
 \usepackage{caption}
 \usepackage{titlesec}
 \usepackage{tikz}
@@ -90,45 +91,281 @@ Here are the results of unconditional DDPMs on various datasets (with respect to
   \item epochs=40
 \end{itemize}
 
+\clearpage
 \subsection*{Moons}
 
 \begin{figure}[h]
   \centering
   \begin{minipage}{0.3\textwidth}
       \centering
-      \includegraphics[width=\linewidth]{moon1.jpg}
-      \subcaption{Moon 1}
+      \includegraphics[width=\linewidth]{images/moon.jpg}
+      \subcaption{Original Moons Dataset}
   \end{minipage}
   \begin{minipage}{0.3\textwidth}
       \centering
-      \includegraphics[width=\linewidth]{moon2.jpg}
-      \subcaption{Moon 2}
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_10_0.0001_0.02_moons.png"}
+      \subcaption{Number of time steps = 10}
   \end{minipage}
   \begin{minipage}{0.3\textwidth}
       \centering
-      \includegraphics[width=\linewidth]{moon3.jpg}
-      \subcaption{Moon 3}
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_50_0.0001_0.02_moons.png"}
+      \subcaption{Number of time steps = 50}
   \end{minipage}
 
-  \vspace{0.5cm}  % Adjust vertical spacing
+  \vspace{0.5cm}
 
   \begin{minipage}{0.3\textwidth}
       \centering
-      \includegraphics[width=\linewidth]{moon4.jpg}
-      \subcaption{Moon 4}
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_100_0.0001_0.02_moons.png"}
+      \subcaption{Number of time steps = 100}
   \end{minipage}
   \begin{minipage}{0.3\textwidth}
       \centering
-      \includegraphics[width=\linewidth]{moon5.jpg}
-      \subcaption{Moon 5}
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_150_0.0001_0.02_moons.png"}
+      \subcaption{Number of time steps = 150}
   \end{minipage}
   \begin{minipage}{0.3\textwidth}
       \centering
-      % Empty cell
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_200_0.0001_0.02_moons.png"}
+    \subcaption{Number of time steps = 200}
   \end{minipage}
 
-  \caption{Five images of moons arranged in a 3×2 grid.}
+  \caption{Moons Dataset}
 \end{figure}
+
+Here are the NLL values:
+\begin{itemize}
+  \item $T = 10$: 1.048
+  \item $T = 50$: 0.9599
+  \item $T = 100$: 0.9519
+  \item $T = 150$: 0.9218
+  \item $T = 200$: 0.9321
+\end{itemize}
+
+As, we can see from both NLL values and the images, $T = 150$ performed the best.
+
+\clearpage
+
+
+
+\subsection*{Blobs}
+
+\begin{figure}[h]
+  \centering
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/blobs.png}
+      \subcaption{Original Blobs Dataset}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_10_0.0001_0.02_blobs.png"}
+      \subcaption{Number of time steps = 10}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_50_0.0001_0.02_blobs.png"}
+      \subcaption{Number of time steps = 50}
+  \end{minipage}
+
+  \vspace{0.5cm}
+
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_100_0.0001_0.02_blobs.png"}
+      \subcaption{Number of time steps = 100}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_150_0.0001_0.02_blobs.png"}
+      \subcaption{Number of time steps = 150}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_200_0.0001_0.02_blobs.png"}
+    \subcaption{Number of time steps = 200}
+  \end{minipage}
+
+  \caption{Blobs Dataset}
+\end{figure}
+
+Here are the NLL values:
+\begin{itemize}
+  \item $T = 10$: 0.37
+  \item $T = 50$: 0.0152
+  \item $T = 100$: 0.0232
+  \item $T = 150$: -0.0223
+  \item $T = 200$: 0.0045
+\end{itemize}
+
+As, we can see from both NLL values and the images, $T = 150$ performed the best. Moreover, there is a sudden decrease in NLL from 10 to 50, which shows the significant impact of increasing the number of time steps.
+
+\clearpage
+\subsection*{Many-Circles}
+
+\begin{figure}[h]
+  \centering
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/manycircles.png}
+      \subcaption{Original ManyCircles Dataset}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_10_0.0001_0.02_manycircles.png"}
+      \subcaption{Number of time steps = 10}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_50_0.0001_0.02_manycircles.png"}
+      \subcaption{Number of time steps = 50}
+  \end{minipage}
+
+  \vspace{0.5cm}
+
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_100_0.0001_0.02_manycircles.png"}
+      \subcaption{Number of time steps = 100}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_150_0.0001_0.02_manycircles.png"}
+      \subcaption{Number of time steps = 150}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_200_0.0001_0.02_manycircles.png"}
+    \subcaption{Number of time steps = 200}
+  \end{minipage}
+
+  \caption{Many Circles Dataset}
+\end{figure}
+
+Here are the NLL values:
+\begin{itemize}
+  \item $T = 10$: 0.75
+  \item $T = 50$: 0.548
+  \item $T = 100$: 0.545
+  \item $T = 150$: 0.558
+  \item $T = 200$: 0.522
+\end{itemize}
+
+As, we can see from both NLL values and the images, $T = 200$ performed the best.
+
+\clearpage
+
+\subsection*{Circles}
+
+\begin{figure}[h]
+  \centering
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/circles.png}
+      \subcaption{Original Circles Dataset}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_10_0.0001_0.02_circles.png"}
+      \subcaption{Number of time steps = 10}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_50_0.0001_0.02_circles.png"}
+      \subcaption{Number of time steps = 50}
+  \end{minipage}
+
+  \vspace{0.5cm}
+
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_100_0.0001_0.02_circles.png"}
+      \subcaption{Number of time steps = 100}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_150_0.0001_0.02_circles.png"}
+      \subcaption{Number of time steps = 150}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_200_0.0001_0.02_circles.png"}
+    \subcaption{Number of time steps = 200}
+  \end{minipage}
+
+  \caption{Circles Dataset}
+\end{figure}
+
+
+Here are the NLL values:
+\begin{itemize}
+  \item $T = 10$: 1.081
+  \item $T = 50$: 0.991
+  \item $T = 100$: 0.9869
+  \item $T = 150$: 1.004
+  \item $T = 200$: 0.992
+\end{itemize}
+
+
+\clearpage
+
+\subsection*{Helix}
+
+\begin{figure}[h]
+  \centering
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/helix.png}
+      \subcaption{Original Helix Dataset}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_3_10_0.0001_0.02_helix_sigmoid.png"}
+      \subcaption{Number of time steps = 10}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_3_50_0.0001_0.02_helix_sigmoid.png"}
+      \subcaption{Number of time steps = 50}
+  \end{minipage}
+
+  \vspace{0.5cm}
+
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_3_100_0.0001_0.02_helix_sigmoid.png"}
+      \subcaption{Number of time steps = 100}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_3_150_0.0001_0.02_helix_sigmoid.png"}
+      \subcaption{Number of time steps = 150}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_3_200_0.0001_0.02_helix_sigmoid.png"}
+    \subcaption{Number of time steps = 200}
+  \end{minipage}
+
+  \caption{Helix Dataset}
+\end{figure}
+
+
+Here are the NLL values:
+\begin{itemize}
+  \item $T = 10$: 1.6179
+  \item $T = 50$: 1.514
+  \item $T = 100$: 1.5198
+  \item $T = 150$: 1.528
+  \item $T = 200$: 1.528
+\end{itemize}
+
+As we can see from the images (and the NLL values), 50 performs the best.
+
+
+
+
+\clearpage
 
 
 
