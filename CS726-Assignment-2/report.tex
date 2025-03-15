@@ -87,14 +87,14 @@ Here are the results of unconditional DDPMs on various datasets (with respect to
   \item lr=0.0001 (so that training loss decreases across epochs)
   \item n\_samples=10000
   \item n\_dim=2 (for helix it is 3)
-  \item batch\_size=128 (to avoid CUDA memory errors and optimal results)
+  \item batch\_size=128 (to avoid CUDA memory errors and produce optimal results)
   \item epochs=40
 \end{itemize}
 
 \clearpage
 \subsection*{Moons}
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \begin{minipage}{0.3\textwidth}
       \centering
@@ -150,7 +150,7 @@ As, we can see from both NLL values and the images, $T = 150$ performed the best
 
 \subsection*{Blobs}
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \begin{minipage}{0.3\textwidth}
       \centering
@@ -203,7 +203,7 @@ As, we can see from both NLL values and the images, $T = 150$ performed the best
 \clearpage
 \subsection*{Many-Circles}
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \begin{minipage}{0.3\textwidth}
       \centering
@@ -257,7 +257,7 @@ As, we can see from both NLL values and the images, $T = 200$ performed the best
 
 \subsection*{Circles}
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \begin{minipage}{0.3\textwidth}
       \centering
@@ -311,7 +311,7 @@ Here are the NLL values:
 
 \subsection*{Helix}
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \begin{minipage}{0.3\textwidth}
       \centering
@@ -362,11 +362,59 @@ Here are the NLL values:
 
 As we can see from the images (and the NLL values), 50 performs the best.
 
+\subsection*{Comparison of different noise schedules}
+Along with the linear noise schedule, we have studied the effect of cosine and signmoid noise schedules for the DDP model. The results of the comparison are as shown below. In each of the cases we have set the other hyperparameters as follows:
+\begin{itemize}
+  \item Number of time steps = 200
+  \item lbeta=0.0001
+  \item ubeta=0.02
+  \item lr=0.0001
+  \item n\_samples=10000
+  \item n\_dim=2
+  \item batch\_size=128
+  \item epochs=40
+\end{itemize}
 
-
-
+\subsubsection*{Moons}
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/Samples for ddpm_2_200_0.0001_0.02_moons_linear.png}
+      \subcaption{Linear Noise Schedule\\NLL=0.932}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/Samples for ddpm_2_200_0.0001_0.02_moons_cosine.png}
+      \subcaption{Cosine Noise Schedule\\NLL=0.949}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/Samples for ddpm_2_200_0.0001_0.02_moons_sigmoid.png}
+      \subcaption{Sigmoid Noise Schedule\\NLL=0.928}
+  \end{minipage}
+\end{figure}
+\subsubsection*{Blobs}
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/Samples for ddpm_2_200_0.0001_0.02_blobs_linear.png}
+      \subcaption{Linear Noise Schedule\\NLL=0.0045}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/Samples for ddpm_2_200_0.0001_0.02_blobs_cosine.png}
+      \subcaption{Cosine Noise Schedule\\NLL=0.0043}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/Samples for ddpm_2_200_0.0001_0.02_blobs_sigmoid.png}
+      \subcaption{Sigmoid Noise Schedule\\NLL=0.0066}
+  \end{minipage}
+\end{figure}
+In both cases (as well as on the other datasets) we observe that the NLL is least for the sigmoid noise schedule.
 \clearpage
-
 
 
 \section*{Classifier-Free Guidance}
@@ -381,7 +429,7 @@ Firstly, guided sampling is more expensive in terms of computation required to t
 \subsection*{Effect of guidance scale}
 We sampled points using CFG on a variety of guidance scale values, here are the images from the moon dataset:
 
-\begin{figure}[h]
+\begin{figure}[H]
   \centering
   \begin{minipage}{0.3\textwidth}
       \centering
