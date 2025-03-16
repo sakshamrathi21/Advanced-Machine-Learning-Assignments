@@ -38,6 +38,8 @@ class SinusoidalPositionEmbeddings(nn.Module):
             embeddings = F.pad(embeddings, (0, 1, 0, 0))
         return embeddings
 
+# Citation: Unet code has been taken from this link: https://colab.research.google.com/drive/1sjy9odlSSy0RBVgMTgP7s99NXsqglsUL?usp=sharing
+
 class ResidualBlock(nn.Module):
     """
     Residual block for U-Net-like architecture adapted for vector data
