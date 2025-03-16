@@ -462,10 +462,10 @@ We trained the DDPM for various combinations of ubeta and lbeta values across al
   \item lbeta = 0.0005, ubeta = 0.05: -0.0104
   \item lbeta = 0.001, ubeta = 0.05: -0.0098
 \end{itemize}
-We observe similar NLL trends for the other datasets as well, leading us to conclude that lbeta=0.0001 and ubeta=0.02 are the best hyperparameters for the noise schedule.
+We observe similar NLL trends for the other datasets as well, leading us to conclude that lbeta=0.0001 and ubeta=0.02 are the best hyperparameters for the linear noise schedule.
 
 \subsection*{Comparison with Cosine and Sigmoid Noise Schedules}
-Along with the linear noise schedule, we have studied the effect of cosine and signmoid noise schedules for the DDP model. The results of the comparison are as shown below. In each of the cases we have set the other hyperparameters as follows:
+Along with the linear noise schedule, we have studied the effect of cosine and sigmoid noise schedules for the DDP model. The results of the comparison are as shown below. In each of the cases we have set the other hyperparameters as follows:
 \begin{itemize}
   \item Number of time steps = 200
   \item lbeta=0.0001
@@ -496,6 +496,7 @@ Along with the linear noise schedule, we have studied the effect of cosine and s
       \subcaption{Sigmoid Noise Schedule\\NLL=0.928}
   \end{minipage}
 \end{figure}
+In this case, we observe that the sigmoid noise schedule is the best out of the three.
 \subsubsection*{Blobs}
 \begin{figure}[H]
   \centering
@@ -515,9 +516,8 @@ Along with the linear noise schedule, we have studied the effect of cosine and s
       \subcaption{Sigmoid Noise Schedule\\NLL=0.0066}
   \end{minipage}
 \end{figure}
+In this case, we observe that the cosine noise schedule is the best out of the three.
 
-
-In both cases (as well as on the other datasets) we observe that the NLL is least for the sigmoid noise schedule.
 
 
 \clearpage
