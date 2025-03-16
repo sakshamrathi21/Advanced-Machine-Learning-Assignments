@@ -260,7 +260,7 @@ class DDPM(nn.Module):
         return self.model(x, t)
 
 class ConditionalDDPM(nn.Module):
-    def __init__(self, n_dim = 3, n_steps = 200, n_classes = 10):
+    def __init__(self, n_classes = 2, n_dim=3, n_steps=200):
         super().__init__()
         self.n_dim = n_dim
         self.n_steps = n_steps
