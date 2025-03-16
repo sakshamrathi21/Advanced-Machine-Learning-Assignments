@@ -682,12 +682,74 @@ The predicted class is then obtained as:
 \hat{c} = \arg\max_c P(c \mid x).
 \end{equation}
 
+Let us now compare this classifier with the one trained for the previous part (we will calculate the accuracy of both of these classifiers from the data generated).
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{|c|c|c|}
+      \hline
+      {\bf Dataset} & {\bf Trained Classifier Accuracy} & {\bf ClassifierDDPM Accuracy} \\
+      \hline
+      Moons & 100\% & 40.81\% \\
+      Blobs & 96.88\% & 71.62\%\\
+      Circles & 100.00 \% & 45.69\% \\
+      Manycircles & 85.69\% & 13.31 \%\\
+      \hline
+  \end{tabular}
+  \caption{Trained Classifier vs Classifier DDPM}
+  \label{tab:classify}
+\end{table}
+
+As we can see, classifierDDPM performs quite badly as compared to the trained Classifier. It is quite low in case of manycircles, where the number of classes are large in number, as compared to other datasets.
 
 
 
 
 \clearpage
+
+
+
 \section*{Reward Guidance}
+
+Denoising Diffusion Probabilistic Models (DDPM) generate samples by progressively denoising a noisy latent variable. The reverse process of diffusion is modeled using a conditional Gaussian distribution:
+
+\begin{equation}
+q(x_{t-1} | x_t) = \mathcal{N} (x_{t-1} ; \mu_t(x_t), \Sigma_t)
+\end{equation}
+
+where $\mu_t(x_t)$ is the \textbf{posterior mean estimate} at step $t$. In DDPM, this mean is typically approximated using a \textbf{pre-trained noise predictor} $\epsilon_\theta(x_t, t)$, which estimates the noise added at timestep $t$:
+
+\begin{equation}
+\mu_t(x_t) = \frac{1}{\sqrt{\alpha_t}} \left( x_t - \frac{\beta_t}{\sqrt{1 - \bar{\alpha}t}} \epsilon_\theta(x_t, t) \right)
+\end{equation}
+
+where:
+
+$\alpha_t, \beta_t$ are diffusion process parameters,
+
+Soft Value-Based Decoding (SVDD) modifies the denoising process by introducing a \textbf{reward function} $R(x_t)$, which biases the sampling towards high-reward samples. The key idea is to adjust the \textbf{posterior mean approximation} using a value-based gradient:
+
+\begin{equation}
+\tilde{\mu}t(x_t) = \mu_t(x_t) + \lambda R(x_t) \nabla{x_t} \log p(x_t)
+\end{equation}
+
+where:
+
+$R(x_t)$ is the reward function (e.g., classifier-based reward),
+
+$\lambda$ (reward scale) controls the influence of the reward function,
+
+$\nabla_{x_t} \log p(x_t)$ is an estimate of the score function (guiding towards high-reward regions).
+
+Effectively, SVDD \textbf{shifts the denoising trajectory} toward samples that maximize the reward while still following the probabilistic structure of DDPM.
+
+In practice, $\nabla_{x_t} \log p(x_t)$ is difficult to compute directly. Instead, we approximate it using:
+
+\textbf{Energy-Based Models (EBMs)}: Estimate the log-probability of samples using a learned energy function.
+
+\textbf{Pre-trained Classifiers}: If a classifier is available, we use its log-probability gradient as an approximation.
+
+SVDD modifies the posterior mean approximation in DDPM by incorporating \textbf{reward-based adjustments}. This allows guiding the generative process \textbf{without explicit conditioning}, making it useful for sampling high-reward samples in an \textbf{unconditional} model.
 
 
 

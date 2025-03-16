@@ -1015,11 +1015,22 @@ def train_and_evaluate_cfg(model, noise_scheduler, dataset_name, guidance_scales
     
     print(f"Evaluation complete. Results saved to {save_path}/")
     return classifier, results
+
+
+import torch.nn.functional as F
+
+def classifier_reward(samples, classifier, target_class):
+    classifier.eval()
+    with torch.no_grad():
+        probs = classifier.predict_proba(samples) 
+        reward = probs[:, target_class]
+
+    return reward
     
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=['train', 'sample', 'train_conditional', 'sample_conditional', 'sample_cfg', 'sample_multi_class', 'compare_classifiers'], default='sample')
+    parser.add_argument("--mode", choices=['train', 'sample', 'train_conditional', 'sample_conditional', 'sample_cfg', 'sample_multi_class', 'compare_classifiers', 'sampleSVDD'], default='sample')
     parser.add_argument("--noise_schedule", choices=['linear', 'cosine', 'sigmoid'], default='linear')
     parser.add_argument("--n_steps", type=int, default=None)
     parser.add_argument("--lbeta", type=float, default=None)
@@ -1039,7 +1050,7 @@ if __name__ == "__main__":
     utils.seed_everything(args.seed)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    if args.mode in ['train', 'sample']:
+    if args.mode in ['train', 'sample', 'sampleSVDD']:
         run_name = f'exps/ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}_{args.noise_schedule}'
         args_name = f'ddpm_{args.n_dim}_{args.n_steps}_{args.lbeta}_{args.ubeta}_{args.dataset}_{args.noise_schedule}'
         model = DDPM(n_dim=args.n_dim, n_steps=args.n_steps)
@@ -1202,9 +1213,7 @@ if __name__ == "__main__":
             n_samples=args.n_samples,
             classifier_epochs=args.classifier_epochs,
             save_path=args.save_path
-        )
-        print(results)
-        exit(0) 
+        ) 
         data_X, data_y = dataset.load_dataset(args.dataset)
         model.load_state_dict(torch.load(f'{run_name}/model.pth'))
         samples_per_class = args.n_samples // args.n_classes
@@ -1313,6 +1322,75 @@ if __name__ == "__main__":
         
         plt.savefig(f"{run_name}/classifier_comparison.png")
         print(f"Comparison plot saved to {run_name}/classifier_comparison.png")
+
+    elif args.mode == 'sampleSVDD':
+        data_X, data_y = dataset.load_dataset(args.dataset)
+        data_X = data_X.to(device)
+        data_y = data_y.to(device)
+        from sklearn.model_selection import train_test_split
+        X_train, X_test, y_train, y_test = train_test_split(
+            data_X.cpu().numpy(), data_y.cpu().numpy(), test_size=0.2, random_state=args.seed
+        )
+        X_train = torch.tensor(X_train, dtype=torch.float32).to(device)
+        X_test = torch.tensor(X_test, dtype=torch.float32).to(device)
+        y_train = torch.tensor(y_train, dtype=torch.long).to(device)
+        y_test = torch.tensor(y_test, dtype=torch.long).to(device)
+        train_dataset = torch.utils.data.TensorDataset(X_train, y_train)
+        test_dataset = torch.utils.data.TensorDataset(X_test, y_test)
+        train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+        test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+        print("Training standard classifier...")
+        standard_classifier = Classifier(n_dim=args.n_dim, n_classes=args.n_classes).to(device)
+        standard_classifier = train_classifier(standard_classifier, train_loader, test_loader, n_epochs=args.epochs)
+        print("Setting up DDPM classifier...")
+        model.load_state_dict(torch.load(f'{run_name}/model.pth'))
+        samples_per_class = args.n_samples // args.n_classes
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        all_samples = {}
+        n_classes = args.n_classes
+        n_samples_per_class = args.n_samples // args.n_classes
+        colors = plt.cm.get_cmap('tab10', n_classes)
+        
+        plt.figure(figsize=(10, 8))
+        
+        for class_label in range(n_classes):
+            reward_fn = lambda x: classifier_reward(x, standard_classifier, class_label)
+            # samples = sampleCFG(model, args.n_samples, noise_scheduler, guidance_scale=args.guidance_scale, class_label=class_label)
+            reward_scale = 0.5
+            samples = sampleSVDD(model, args.n_samples, noise_scheduler, reward_scale, reward_fn)
+            all_samples[class_label] = samples
+            samples_np = samples.cpu().numpy()
+            plt.scatter(
+                samples_np[:, 0], 
+                samples_np[:, 1], 
+                alpha=0.7, 
+                s=15, 
+                color=colors(class_label),
+                label=f"Class {class_label}"
+            )
+        
+        plt.xlabel("x1")
+        plt.ylabel("x2")
+        plt.title(f"Samples from Conditional DDPM for All Classes")
+        plt.legend()
+        plt.grid(True)
+        plt.axis('equal')
+        plt.savefig(f"images/Samples - SVDD for {args_name}.png")
+        plt.close()
+        if data_y is not None:
+            for class_label in range(args.n_classes):
+                class_indices = (data_y == class_label).nonzero().squeeze()
+                if len(class_indices) > 0:
+                    class_data = data_X[class_indices]
+                    class_samples = all_samples[class_label]
+                    print(f"Class {class_label}:")
+                    print(f"  - Shape of ground truth data: {class_data.shape}")
+                    print(f"  - Shape of generated samples: {class_samples.shape}")
+                    print(f"  - Class-specific NLL: {get_nll(class_data.to(device), class_samples)}")
+        all_samples_tensor = torch.cat([samples for samples in all_samples.values()], dim=0)
+        
+        torch.save(all_samples_tensor, f'{run_name}/svdd_samples_class_{args.class_label}_scale_{args.guidance_scale}_{args.seed}_{args.n_samples}.pth')
+
     
     else:
         raise ValueError(f"Invalid mode {args.mode}")
