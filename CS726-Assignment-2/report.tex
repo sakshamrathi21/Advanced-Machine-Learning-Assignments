@@ -362,7 +362,109 @@ Here are the NLL values:
 
 As we can see from the images (and the NLL values), 50 performs the best.
 
-\subsection*{Comparison of different noise schedules}
+\subsection*{Noise Schedule Settings}
+We trained the DDPM for various combinations of ubeta and lbeta values across all the datasets, and selected the best one using NLL value comparison. Here are the NLL values for the moons and blobs datasets:
+
+\subsubsection*{Moons}
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/moon.jpg}
+      \subcaption{Original Moons Dataset}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_200_0.0001_0.02_moons_linear.png"}
+      \subcaption{lbeta=0.0001, ubeta=0.02}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_200_0.0001_0.05_moons_linear.png"}
+      \subcaption{lbeta=0.0001, ubeta=0.05}
+  \end{minipage}
+
+  \vspace{0.5cm}
+
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_200_0.001_0.05_moons_linear.png"}
+      \subcaption{lbeta=0.0005, ubeta=0.02}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_200_0.0005_0.05_moons_linear.png"}
+      \subcaption{lbeta=0.0005, ubeta=0.05}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_200_0.001_0.05_moons_linear.png"}
+      \subcaption{lbeta=0.001, ubeta=0.05}
+  \end{minipage}
+
+  \caption{Moons Dataset}
+\end{figure}
+
+\begin{itemize}
+  \item lbeta = 0.0001, ubeta = 0.02: 0.9184
+  \item lbeta = 0.0001, ubeta = 0.05: 0.9223
+  \item lbeta = 0.0005, ubeta = 0.02: 0.9321
+  \item lbeta = 0.0005, ubeta = 0.05: 0.9265
+  \item lbeta = 0.001, ubeta = 0.05: 0.9498
+\end{itemize}
+
+\subsubsection*{Blobs}
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{images/blobs.png}
+      \subcaption{Original Blobs Dataset}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_200_0.0001_0.02_blobs_linear.png"}
+      \subcaption{lbeta=0.0001, ubeta=0.02}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_200_0.0001_0.05_blobs_linear.png"}
+      \subcaption{lbeta=0.0001, ubeta=0.05}
+  \end{minipage}
+
+  \vspace{0.5cm}
+
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_200_0.0005_0.02_blobs_linear.png"}
+      \subcaption{lbeta=0.0005, ubeta=0.02}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_200_0.0005_0.05_blobs_linear.png"}
+      \subcaption{lbeta=0.0005, ubeta=0.05}
+  \end{minipage}
+  \begin{minipage}{0.3\textwidth}
+      \centering
+      \includegraphics[width=\linewidth]{"images/Samples for ddpm_2_200_0.001_0.05_blobs_linear.png"}
+      \subcaption{lbeta=0.001, ubeta=0.05}
+  \end{minipage}
+
+  \caption{Blobs Dataset}
+\end{figure}
+
+\begin{itemize}
+  \item lbeta = 0.0001, ubeta = 0.02: -0.0145
+  \item lbeta = 0.0001, ubeta = 0.05: -0.0102
+  \item lbeta = 0.0005, ubeta = 0.02: -0.0099
+  \item lbeta = 0.0005, ubeta = 0.05: -0.0104
+  \item lbeta = 0.001, ubeta = 0.05: -0.0098
+\end{itemize}
+We observe similar NLL trends for the other datasets as well, leading us to conclude that lbeta=0.0001 and ubeta=0.02 are the best hyperparameters for the noise schedule.
+
+\subsection*{Comparison with Cosine and Sigmoid Noise Schedules}
 Along with the linear noise schedule, we have studied the effect of cosine and signmoid noise schedules for the DDP model. The results of the comparison are as shown below. In each of the cases we have set the other hyperparameters as follows:
 \begin{itemize}
   \item Number of time steps = 200
