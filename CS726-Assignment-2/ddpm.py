@@ -11,6 +11,7 @@ import os
 import matplotlib.pyplot as plt
 import math
 from utils import get_nll, get_emd
+import numpy as np
 
 class SinusoidalPositionEmbeddings(nn.Module):
     """
@@ -499,7 +500,7 @@ def train(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
 
 
 @torch.no_grad()
-def sample(model, n_samples, noise_scheduler, return_intermediate=False): 
+def sample(model, n_samples, noise_scheduler, return_intermediate=False, prior_samples_path="data/albatross_prior_samples.npy", save_path="albatross_samples.npy", deterministic=False): 
     """
     Sample from the model
     
@@ -520,7 +521,11 @@ def sample(model, n_samples, noise_scheduler, return_intermediate=False):
     """ 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     n_dim = model.n_dim
-    x_t = torch.randn((n_samples, n_dim), device=device)
+    if deterministic:
+        x_t = torch.tensor(np.load(prior_samples_path), dtype=torch.float32, device=device)
+        n_samples = x_t.shape[0]
+    else:
+        x_t = torch.randn((n_samples, n_dim), device=device)
     intermediate_steps = [] if return_intermediate else None
     
     for t in reversed(range(noise_scheduler.num_timesteps)):
@@ -532,7 +537,9 @@ def sample(model, n_samples, noise_scheduler, return_intermediate=False):
         alpha_t = noise_scheduler.alphas[t]
         beta_t = noise_scheduler.betas[t]
         mean = (1 / torch.sqrt(alpha_t)) * (x_t - ((1 - alpha_t) / torch.sqrt(1 - alpha_bar_t)) * noise_pred)
-        if t > 1:
+        if deterministic:  
+            x_t = mean
+        elif t > 1:
             noise = torch.randn_like(x_t, device=device)
             std = (1 - noise_scheduler.alpha_bar[t - 1]) / (1 - alpha_bar_t) * beta_t
             x_t = mean + torch.sqrt(std) * noise
@@ -543,6 +550,8 @@ def sample(model, n_samples, noise_scheduler, return_intermediate=False):
             intermediate_steps.append(x_t.clone().detach())
 
     x_t_np = x_t.cpu().numpy()
+    if prior_samples_path:
+        np.save(save_path, x_t_np)
     plt.figure(figsize=(6, 6))
     plt.scatter(x_t_np[:, 0], x_t_np[:, 1], alpha=0.6, s=10)
     plt.xlabel("x1")
@@ -1073,6 +1082,7 @@ if __name__ == "__main__":
     parser.add_argument("--n_classes", type=int, default=2)
     parser.add_argument("--class_label", type=int, default=0)
     parser.add_argument("--guidance_scale", type=float, default=1.0)
+    parser.add_argument("--deterministic", action="store_true", help="Enable deterministic sampling")
 
     args = parser.parse_args()
     utils.seed_everything(args.seed)
@@ -1123,7 +1133,7 @@ if __name__ == "__main__":
         print(f"Sampling from {run_name}")
         data_X, _ = dataset.load_dataset(args.dataset)
         model.load_state_dict(torch.load(f'{run_name}/model.pth'))
-        samples = sample(model, args.n_samples, noise_scheduler)
+        samples = sample(model, args.n_samples, noise_scheduler, deterministic=args.deterministic)
         print(f"NLL: {get_nll(data_X.to(device), samples.to(device))}")
         samples = samples.cpu().numpy()
         if args.n_dim == 3:

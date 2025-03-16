@@ -518,10 +518,75 @@ In this case, we observe that the sigmoid noise schedule is the best out of the 
 \end{figure}
 In this case, we observe that the cosine noise schedule is the best out of the three.
 
+\subsubsection*{Albatross}
+The results of the comparison between the use of linear, cosine and sigmoid schedule for the albatross dataset are as shown below.
+\begin{enumerate}
+  \item Number of time steps = 200, lbeta=0.0001, ubeta=0.02, lr=0.0001, n\_samples=10000, n\_dim=64, batch\_size=128, epochs=40
+  \begin{itemize}
+  \item NLL for linear schedule = -4.27142733285642112
+  \item NLL for cosine schedule = -5.045544147491455
+  \item NLL for sigmoid schedule = -4.5471272468566895
+  \end{itemize}
+    \item Number of time steps = 200, lbeta=0.0001, ubeta=0.05, lr=0.0001, n\_samples=10000, n\_dim=64, batch\_size=128, epochs=40
+  \begin{itemize}
+  \item NLL for linear schedule = -5.325654983520508
+  \item NLL for cosine schedule = -5.242018222808838
+  \item NLL for sigmoid schedule = -4.6837568283081055
+  \end{itemize}  \item Number of time steps = 200, lbeta=0.001, ubeta=0.05, lr=0.0001, n\_samples=10000, n\_dim=64, batch\_size=128, epochs=40
+  \begin{itemize}
+  \item NLL for linear schedule = -5.0962653160095215
+  \item NLL for cosine schedule = -5.220670223236084
+  \item NLL for sigmoid schedule = -5.408768177032471
+  \end{itemize}
+    \item Number of time steps = 200, lbeta=0.001, ubeta=0.1, lr=0.0001, n\_samples=10000, n\_dim=64, batch\_size=128, epochs=40
+  \begin{itemize}
+  \item NLL for linear schedule = -4.390678405761719
+  \item NLL for cosine schedule = -4.833913326263428
+  \item NLL for sigmoid schedule = -4.660123825073242
+  \end{itemize}
+    \item Number of time steps = 200, lbeta=0.01, ubeta=0.05, lr=0.0001, n\_samples=10000, n\_dim=64, batch\_size=128, epochs=40
+  \begin{itemize}
+  \item NLL for linear schedule = -4.375370502471924
+  \item NLL for cosine schedule = NLL: -4.554390907287598
+  \item NLL for sigmoid schedule = -4.550512790679932
+  \end{itemize}
+\end{enumerate}
+From the results, we observe that the cosine schedule generally achieves the lowest NLL, indicating better model performance in most cases. However, at higher values of \texttt{lbeta} and \texttt{ubeta}, the sigmoid schedule performs slightly better, as seen when \texttt{lbeta} = 0.001 and \texttt{ubeta} = 0.05, where sigmoid achieves the lowest NLL (-5.4088). The linear schedule consistently underperforms compared to the cosine and sigmoid schedules. 
+
 
 
 \clearpage
+We train a model on the Albatross dataset using our best-performing hyperparameter configuration. The training is performed using the following parameters:
 
+\begin{itemize}
+    \item \textbf{Number of time steps:} 200
+    \item \textbf{Lower bound of beta (lbeta):} 0.001
+    \item \textbf{Upper bound of beta (ubeta):} 0.05
+    \item \textbf{Learning rate (lr):} 0.0001
+    \item \textbf{Number of samples (n\_samples):} 10,000
+    \item \textbf{Dimensionality (n\_dim):} 64
+    \item \textbf{Batch size:} 128
+    \item \textbf{Epochs:} 40
+    \item \textbf{Noise schedule:} Sigmoid (as it provided the best NLL score)
+\end{itemize}
+
+\paragraph{Model File and Sampling Process}  
+The trained model is saved as 
+\\
+\texttt{exps/ddpm\_64\_200\_0.001\_0.05\_albatross\_sigmoid/model.pth}. Using this model, we generate samples following the given deterministic process:  
+\begin{itemize}
+    \item We initialize $x_T$ using \texttt{data/albatross\_prior\_samples.npy}, which contains 32,561 vectors sampled from $\mathcal{N}(0, I_d)$.
+    \item In step 4 of Algorithm 2 (from [2]), we set $z = 0$, ensuring deterministic execution.
+\end{itemize}  
+The generated samples are saved in \texttt{albatross\_samples.npy}.  
+
+\paragraph{Reproducibility}  
+To verify and reproduce our results, we provide a script \texttt{reproduce.py}, which:  
+\begin{enumerate}
+    \item Loads the trained model (\texttt{model.pth}).
+    \item Regenerates the samples using the deterministic process.
+    \item Saves the reproduced samples as \texttt{albatross\_samples\_reproduce.npy}.
+\end{enumerate} 
 
 \section*{Classifier-Free Guidance}
 

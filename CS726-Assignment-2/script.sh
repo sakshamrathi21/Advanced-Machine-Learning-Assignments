@@ -14,6 +14,7 @@ n_samples=10000
 n_dim=64
 batch_size=(32 64 128)
 epochs=(30 40 50)
+noise_schedile=("linear" "cosine" "sigmoid")
 
 results_file="tuning_results.txt"
 
@@ -28,17 +29,19 @@ for dataset in "${datasets[@]}"; do
                 for lr in "${lr[@]}"; do
                     for batch_size in "${batch_size[@]}"; do
                         for epochs in "${epochs[@]}"; do
-                            echo "Training with lbeta=$lbeta, ubeta=$ubeta, lr=$lr, batch_size=$batch_size, epochs=$epochs" | tee -a "$results_file"
-                
-                            python3 ddpm.py --mode 'train' --n_steps "$n_steps" --lbeta "$lbeta" --ubeta "$ubeta" \
-                                --epochs "$epochs" --n_samples "$n_samples" --batch_size "$batch_size" \
-                                --lr "$lr" --n_dim "$n_dim" --dataset "$dataset" | tee -a "$results_file"
+                            for noise_schedule in "${noise_schedule[@]}"; do
+                                echo "Training with lbeta=$lbeta, ubeta=$ubeta, lr=$lr, batch_size=$batch_size, epochs=$epochs, noise_schedule=$noise_schedule" | tee -a "$results_file"
+                    
+                                python3 ddpm.py --mode 'train' --n_steps "$n_steps" --lbeta "$lbeta" --ubeta "$ubeta" \
+                                    --epochs "$epochs" --n_samples "$n_samples" --batch_size "$batch_size" \
+                                    --lr "$lr" --n_dim "$n_dim" --dataset "$dataset" --noise_schedule "$noise_schedule" | tee -a "$results_file"
 
-                            python3 ddpm.py --mode 'sample' --n_steps "$n_steps" --lbeta "$lbeta" --ubeta "$ubeta" \
-                                --epochs "$epochs" --n_samples "$n_samples" --batch_size "$batch_size" \
-                                --lr "$lr" --n_dim "$n_dim" --dataset "$dataset" | tee -a "$results_file"
+                                python3 ddpm.py --mode 'sample' --n_steps "$n_steps" --lbeta "$lbeta" --ubeta "$ubeta" \
+                                    --epochs "$epochs" --n_samples "$n_samples" --batch_size "$batch_size" \
+                                    --lr "$lr" --n_dim "$n_dim" --dataset "$dataset" --noise_schedule "$noise_schedule" | tee -a "$results_file"
 
-                            echo "---------------------------------------" | tee -a "$results_file"
+                                echo "---------------------------------------" | tee -a "$results_file"
+                            done
                         done
                     done
                 done
