@@ -694,7 +694,8 @@ def sampleCFG(model, n_samples, noise_scheduler, guidance_scale, class_label):
         else:
             x_t = mean
     return x_t
-
+    
+@torch.no_grad()
 def sampleSVDD(model, n_samples, noise_scheduler, reward_scale, reward_fn):
     """
     Sample from the SVDD model
@@ -1327,6 +1328,7 @@ if __name__ == "__main__":
         data_X, data_y = dataset.load_dataset(args.dataset)
         data_X = data_X.to(device)
         data_y = data_y.to(device)
+        model.load_state_dict(torch.load(f'{run_name}/model.pth'))
         from sklearn.model_selection import train_test_split
         X_train, X_test, y_train, y_test = train_test_split(
             data_X.cpu().numpy(), data_y.cpu().numpy(), test_size=0.2, random_state=args.seed
@@ -1343,7 +1345,6 @@ if __name__ == "__main__":
         standard_classifier = Classifier(n_dim=args.n_dim, n_classes=args.n_classes).to(device)
         standard_classifier = train_classifier(standard_classifier, train_loader, test_loader, n_epochs=args.epochs)
         print("Setting up DDPM classifier...")
-        model.load_state_dict(torch.load(f'{run_name}/model.pth'))
         samples_per_class = args.n_samples // args.n_classes
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         all_samples = {}
