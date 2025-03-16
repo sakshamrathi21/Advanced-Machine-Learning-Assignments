@@ -413,7 +413,11 @@ Along with the linear noise schedule, we have studied the effect of cosine and s
       \subcaption{Sigmoid Noise Schedule\\NLL=0.0066}
   \end{minipage}
 \end{figure}
+
+
 In both cases (as well as on the other datasets) we observe that the NLL is least for the sigmoid noise schedule.
+
+
 \clearpage
 
 
@@ -480,6 +484,35 @@ We sampled points using CFG on a variety of guidance scale values, here are the 
 
   \caption{Moons - CFG}
 \end{figure}
+
+
+Here are the NLL values for the two class labels:
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{|c|c|c|}
+      \hline
+      {\bf Guidance Scale} & {\bf NLL for Class Label 0} & {\bf NLL for Class Label 1} \\
+      \hline
+      0.0 & 0.53 & 0.58 \\
+      0.2 & 0.51 & 0.58 \\
+      0.5 & 0.50 & 0.59 \\
+      0.7 & 0.50 & 0.60 \\
+      1.0 & 0.51 & 0.62 \\
+      2.0 & 0.57 & 0.66 \\
+      4.0 & 0.65 & 0.71 \\
+      \hline
+  \end{tabular}
+  \caption{NLL Values for the two class labels of the Moons Dataset}
+  \label{tab:nll_values}
+\end{table}
+
+As, it is evident from the NLL values and the images shown above, guidance scales 0.2 and 0.5 perform the best. With higher guidance scales, we typically lose focus on randomly generated data, and rely too much on the training labels provided, thus the NLL values are low, when another sample is chosen from the actual dataset. These observations match with the ones presented in the CFG paper too.
+
+
+
+
+
 
 \clearpage
 \section*{Reward Guidance}
