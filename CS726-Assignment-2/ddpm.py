@@ -803,6 +803,218 @@ def compare_classifiers(standard_classifier, ddpm_classifier, test_loader):
     print(f"DDPM Classifier Accuracy: {ddpm_acc:.2f}%")
     
     return standard_acc, ddpm_acc
+
+
+def evaluate_cfg_sampling(model, classifier, noise_scheduler, guidance_scales=[0, 1, 2, 5, 10], n_samples=100):
+    """
+    Evaluate the quality of samples generated with classifier-free guidance using a classifier
+    
+    Args:
+        model: ConditionalDDPM model
+        classifier: Trained classifier model
+        noise_scheduler: NoiseScheduler
+        guidance_scales: List of guidance scale values to test
+        n_samples: Number of samples per class
+        
+    Returns:
+        dict: Results for each guidance scale, containing accuracy metrics
+    """
+    results = {}
+    device = next(model.parameters()).device
+    
+    for scale in guidance_scales:
+        print(f"Evaluating with guidance scale: {scale}")
+        samples = []
+        labels = []
+        
+        # Generate samples for each class using the specified guidance scale
+        for class_label in range(model.n_classes):
+            class_samples = sampleCFG(
+                model, 
+                n_samples=n_samples,
+                noise_scheduler=noise_scheduler,
+                guidance_scale=scale,
+                class_label=class_label
+            )
+            samples.append(class_samples)
+            labels.extend([class_label] * n_samples)
+        
+        # Concatenate samples and convert labels to tensor
+        samples = torch.cat(samples, dim=0)
+        labels = torch.tensor(labels, device=device)
+        
+        # Evaluate with classifier
+        with torch.no_grad():
+            logits = classifier(samples)
+            predicted = logits.argmax(dim=1)
+            accuracy = (predicted == labels).float().mean().item()
+            
+            # Calculate per-class accuracy
+            class_accuracies = {}
+            for class_label in range(model.n_classes):
+                class_mask = (labels == class_label)
+                if class_mask.sum() > 0:
+                    class_acc = (predicted[class_mask] == class_label).float().mean().item()
+                    class_accuracies[f"class_{class_label}_accuracy"] = class_acc
+        
+        results[scale] = {
+            "overall_accuracy": accuracy,
+            **class_accuracies
+        }
+        
+        print(f"Guidance scale {scale}: Overall accuracy = {accuracy:.4f}")
+        for class_label in range(model.n_classes):
+            print(f"  Class {class_label} accuracy: {class_accuracies.get(f'class_{class_label}_accuracy', 0):.4f}")
+    
+    return results
+
+def train_and_evaluate_cfg(model, noise_scheduler, dataset_name, guidance_scales=[0, 1, 2, 5, 10], n_samples=100, classifier_epochs=30, save_path='cfg_evaluation'):
+    """
+    Train a classifier on the dataset, generate samples with different guidance scales,
+    and evaluate how well the classifier recognizes the generated samples.
+    
+    Args:
+        model: ConditionalDDPM model
+        noise_scheduler: NoiseScheduler
+        dataset_name: Name of dataset to load
+        guidance_scales: List of guidance scale values to test
+        n_samples: Number of samples per class to generate
+        classifier_epochs: Number of epochs to train the classifier
+        save_path: Directory to save results and plots
+    
+    Returns:
+        tuple: (trained classifier, evaluation results)
+    """
+    os.makedirs(save_path, exist_ok=True)
+    device = next(model.parameters()).device
+    print("Loading dataset...")
+    data_X, data_y = dataset.load_dataset(dataset_name)
+    data_X = data_X.to(device)
+    data_y = data_y.to(device)
+    n_dim = data_X.shape[1]
+    n_classes = model.n_classes
+    from sklearn.model_selection import train_test_split
+    X_train, X_test, y_train, y_test = train_test_split(
+        data_X.cpu().numpy(), data_y.cpu().numpy(), test_size=0.2, random_state=42
+    )
+    X_train = torch.tensor(X_train, dtype=torch.float32).to(device)
+    X_test = torch.tensor(X_test, dtype=torch.float32).to(device)
+    y_train = torch.tensor(y_train, dtype=torch.long).to(device)
+    y_test = torch.tensor(y_test, dtype=torch.long).to(device)
+    train_dataset = torch.utils.data.TensorDataset(X_train, y_train)
+    test_dataset = torch.utils.data.TensorDataset(X_test, y_test)
+    train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True)
+    test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=64, shuffle=False)
+    print("Training classifier...")
+    classifier = Classifier(n_dim=n_dim, n_classes=n_classes).to(device)
+    classifier = train_classifier(classifier, train_loader, test_loader, n_epochs=classifier_epochs)
+    torch.save(classifier.state_dict(), f"{save_path}/classifier.pth")
+    print(f"Classifier saved to {save_path}/classifier.pth")
+
+    def sample_and_evaluate_cfg(guidance_scale):
+        print(f"\nGenerating samples with guidance scale: {guidance_scale}")
+        all_samples = []
+        all_labels = []
+        for class_label in range(n_classes):
+            print(f"  Generating samples for class {class_label}...")
+            samples = sampleCFG(
+                model=model,
+                n_samples=n_samples,
+                noise_scheduler=noise_scheduler,
+                guidance_scale=guidance_scale,
+                class_label=class_label
+            )
+            all_samples.append(samples)
+            all_labels.extend([class_label] * n_samples)
+            samples_np = samples.cpu().numpy()
+            if n_dim == 2:  
+                plt.figure(figsize=(6, 6))
+                plt.scatter(samples_np[:, 0], samples_np[:, 1], alpha=0.7, s=10)
+                plt.title(f"Class {class_label}, Guidance Scale {guidance_scale}")
+                plt.xlabel("x1")
+                plt.ylabel("x2")
+                plt.axis('equal')
+                plt.grid(True)
+                plt.savefig(f"{save_path}/class{class_label}_scale{guidance_scale}.png")
+                plt.close()
+        all_samples = torch.cat(all_samples, dim=0)
+        all_labels = torch.tensor(all_labels, dtype=torch.long, device=device)
+        torch.save(all_samples, f"{save_path}/samples_scale{guidance_scale}.pt")
+        torch.save(all_labels, f"{save_path}/labels_scale{guidance_scale}.pt")
+        classifier.eval()
+        with torch.no_grad():
+            logits = classifier(all_samples)
+            predicted = torch.argmax(logits, dim=1)
+            accuracy = (predicted == all_labels).float().mean().item()
+            class_accuracies = {}
+            confusion_matrix = torch.zeros(n_classes, n_classes, device=device)
+            for i in range(len(all_labels)):
+                confusion_matrix[all_labels[i], predicted[i]] += 1      
+            for c in range(n_classes):
+                class_mask = (all_labels == c)
+                if class_mask.sum() > 0:
+                    class_acc = (predicted[class_mask] == c).float().mean().item()
+                    class_accuracies[f"class_{c}_accuracy"] = class_acc
+            for i in range(n_classes):
+                confusion_matrix[i] = confusion_matrix[i] / confusion_matrix[i].sum() * 100
+        print(f"Results for guidance scale {guidance_scale}:")
+        print(f"  Overall accuracy: {accuracy:.4f}")
+        for c in range(n_classes):
+            print(f"  Class {c} accuracy: {class_accuracies.get(f'class_{c}_accuracy', 0):.4f}")
+        if n_classes > 2:
+            plt.figure(figsize=(8, 6))
+            cm = confusion_matrix.cpu().numpy()
+            plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+            plt.title(f'Confusion Matrix - Scale {guidance_scale}')
+            plt.colorbar()
+            tick_marks = range(n_classes)
+            plt.xticks(tick_marks, range(n_classes))
+            plt.yticks(tick_marks, range(n_classes))
+            plt.xlabel('Predicted Class')
+            plt.ylabel('True Class')
+            for i in range(n_classes):
+                for j in range(n_classes):
+                    plt.text(j, i, f'{cm[i, j]:.1f}',
+                            horizontalalignment="center",
+                            color="white" if cm[i, j] > 50 else "black")
+            
+            plt.savefig(f"{save_path}/confusion_matrix_scale{guidance_scale}.png")
+            plt.close()
+            
+        return {
+            "overall_accuracy": accuracy,
+            **class_accuracies,
+            "confusion_matrix": confusion_matrix.cpu().numpy().tolist()
+        }
+    
+    results = {}
+    for scale in guidance_scales:
+        results[scale] = sample_and_evaluate_cfg(scale)
+    plt.figure(figsize=(10, 6))
+    scales = list(results.keys())
+    accuracies = [results[s]["overall_accuracy"] for s in scales]
+    
+    plt.plot(scales, accuracies, marker='o', linestyle='-', linewidth=2)
+    plt.xlabel('Guidance Scale')
+    plt.ylabel('Classification Accuracy (%)')
+    plt.title('Effect of Guidance Scale on Sample Quality')
+    plt.grid(True)
+    plt.xticks(scales)
+    plt.ylim(0, 1.05)
+    if n_classes > 1:
+        for c in range(n_classes):
+            class_accs = [results[s].get(f"class_{c}_accuracy", 0) for s in scales]
+            plt.plot(scales, class_accs, marker='s', linestyle='--', label=f'Class {c}')
+        plt.legend()
+    
+    plt.savefig(f"{save_path}/accuracy_vs_scale.png")
+    plt.close()
+    import json
+    with open(f"{save_path}/evaluation_results.json", 'w') as f:
+        json.dump({str(k): v for k, v in results.items()}, f, indent=2)
+    
+    print(f"Evaluation complete. Results saved to {save_path}/")
+    return classifier, results
     
 
 if __name__ == "__main__":
@@ -982,6 +1194,17 @@ if __name__ == "__main__":
 
     elif args.mode == 'sample_cfg':
         print(f"CFG sampling from {run_name} for class {args.class_label} with guidance scale {args.guidance_scale}")
+        classifier, results = train_and_evaluate_cfg(
+            model=model,
+            noise_scheduler=noise_scheduler,
+            dataset_name=args.dataset,
+            guidance_scales=args.guidance_scales,
+            n_samples=args.n_samples,
+            classifier_epochs=args.classifier_epochs,
+            save_path=args.save_path
+        )
+        print(results)
+        exit(0) 
         data_X, data_y = dataset.load_dataset(args.dataset)
         model.load_state_dict(torch.load(f'{run_name}/model.pth'))
         samples_per_class = args.n_samples // args.n_classes
