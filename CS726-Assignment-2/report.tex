@@ -690,17 +690,17 @@ Let us now compare this classifier with the one trained for the previous part (w
       \hline
       {\bf Dataset} & {\bf Trained Classifier Accuracy} & {\bf ClassifierDDPM Accuracy} \\
       \hline
-      Moons & 100\% & 40.81\% \\
-      Blobs & 96.88\% & 71.62\%\\
-      Circles & 100.00 \% & 45.69\% \\
-      Manycircles & 85.69\% & 13.31 \%\\
+      Moons & 100\% & 99.19\% \\
+      Blobs & 96.88\% & 96.56\%\\
+      Circles & 100.00 \% & 98.25\% \\
+      Manycircles & 85.69\% & 85.19 \%\\
       \hline
   \end{tabular}
   \caption{Trained Classifier vs Classifier DDPM}
   \label{tab:classify}
 \end{table}
 
-As we can see, classifierDDPM performs quite badly as compared to the trained Classifier. It is quite low in case of manycircles, where the number of classes are large in number, as compared to other datasets.
+As we can see, classifierDDPM performs equally well as compared to the trained Classifier. The accuracy is lower in case of manycircles, because of larger number of classes, as compared to other datasets.
 
 
 
@@ -758,10 +758,10 @@ SVDD modifies the posterior mean approximation in DDPM by incorporating \textbf{
       \hline
       {\bf Dataset} & {\bf Trained Classifier} & {\bf ClassifierDDPM} & {\bf SVDD} \\
       \hline
-      Moons & 100\% & 40.81\% & 64.15\% \\
-      Blobs & 96.88\% & 71.62\% & 57.89\% \\
-      Circles & 100.00 \% & 45.69\% & 77.62\% \\
-      Manycircles & 85.69\% & 13.31 \% & 30.04\% \\
+      Moons & 100\% & 99.19\% & 64.15\% \\
+      Blobs & 96.88\% & 96.56\% & 57.89\% \\
+      Circles & 100.00 \% & 98.25\% & 77.62\% \\
+      Manycircles & 85.69\% & 85.19 \% & 30.04\% \\
       \hline
   \end{tabular}
   \caption{Trained Classifier vs Classifier DDPM}

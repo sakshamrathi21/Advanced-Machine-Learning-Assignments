@@ -296,22 +296,33 @@ class ClassifierDDPM():
         probs = self.predict_proba(x)
         return torch.argmax(probs, dim=1)
 
-    def predict_proba(self, x):
+    def predict_proba(self, x, num_noise_samples=10, timesteps=None):
         batch_size = x.shape[0]
         n_classes = self.model.n_classes
         device = self.device
         x = x.to(device)
-        t = torch.ones(batch_size, dtype=torch.long, device=device) * (self.noise_scheduler.num_timesteps // 2)
-        alpha_bar_t = self.noise_scheduler.alpha_bar[t].view(-1, 1)
-        noise = torch.randn_like(x, device=device)
-        x_t = torch.sqrt(alpha_bar_t) * x + torch.sqrt(1 - alpha_bar_t) * noise
+        if timesteps is None:
+            timesteps = [self.noise_scheduler.num_timesteps // 4, 
+                        self.noise_scheduler.num_timesteps // 2,
+                        3 * self.noise_scheduler.num_timesteps // 4]
+        
         class_scores = torch.zeros((batch_size, n_classes), device=device)
-        for c in range(n_classes):
-            class_labels = torch.full((batch_size,), c, dtype=torch.long, device=device)
-            predicted_noise = self.model(x_t, t, class_labels)
-            error = torch.mean((predicted_noise - noise)**2, dim=1)
-            class_scores[:, c] = -error
-        probs = F.softmax(class_scores, dim=1)
+        for t_step in timesteps:
+            t = torch.full((batch_size,), t_step, dtype=torch.long, device=device)
+            alpha_bar_t = self.noise_scheduler.alpha_bar[t].view(-1, 1)
+            alpha_bar_t = alpha_bar_t.to(device)
+            for _ in range(num_noise_samples):
+                noise = torch.randn_like(x, device=device)
+                x_t = torch.sqrt(alpha_bar_t) * x + torch.sqrt(1 - alpha_bar_t) * noise
+                
+                for c in range(n_classes):
+                    class_labels = torch.full((batch_size,), c, dtype=torch.long, device=device)
+                    predicted_noise = self.model(x_t, t, class_labels)
+                    error = torch.mean((predicted_noise - noise)**2, dim=1)
+                    class_scores[:, c] -= error  
+        class_scores /= (len(timesteps) * num_noise_samples)
+        temperature = 10.0  
+        probs = F.softmax(class_scores * temperature, dim=1)
         return probs
 
 class Classifier(nn.Module):
