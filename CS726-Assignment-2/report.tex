@@ -747,12 +747,29 @@ In practice, $\nabla_{x_t} \log p(x_t)$ is difficult to compute directly. Instea
 
 \textbf{Energy-Based Models (EBMs)}: Estimate the log-probability of samples using a learned energy function.
 
-\textbf{Pre-trained Classifiers}: If a classifier is available, we use its log-probability gradient as an approximation.
+\textbf{Pre-trained Classifiers}: If a classifier is available, we use its log-probability gradient as an approximation. (This is the reward function which was used by us.)
 
 SVDD modifies the posterior mean approximation in DDPM by incorporating \textbf{reward-based adjustments}. This allows guiding the generative process \textbf{without explicit conditioning}, making it useful for sampling high-reward samples in an \textbf{unconditional} model.
 
 
+\begin{table}[h]
+  \centering
+  \begin{tabular}{|c|c|c|c|}
+      \hline
+      {\bf Dataset} & {\bf Trained Classifier} & {\bf ClassifierDDPM} & {\bf SVDD} \\
+      \hline
+      Moons & 100\% & 40.81\% & 64.15\% \\
+      Blobs & 96.88\% & 71.62\% & 57.89\% \\
+      Circles & 100.00 \% & 45.69\% & 77.62\% \\
+      Manycircles & 85.69\% & 13.31 \% & 30.04\% \\
+      \hline
+  \end{tabular}
+  \caption{Trained Classifier vs Classifier DDPM}
+  \label{tab:classif}
+\end{table}
 
+
+As we can see from the accuracy values of the table, SVDD performs quite better as compared to classifierDDPM which was used in the previous part.
 
 
 \end{document}

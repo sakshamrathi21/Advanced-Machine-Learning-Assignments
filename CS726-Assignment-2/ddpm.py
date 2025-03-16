@@ -196,7 +196,7 @@ class NoiseScheduler():
         elif type == "sigmoid":
             self.init_sigmoid_schedule(**kwargs)
         else:
-            raise NotImplementedError(f"{type} scheduler is not implemented") # change this if you implement additional schedulers
+            raise NotImplementedError(f"{type} scheduler is not implemented")
 
 
     def init_linear_schedule(self, beta_start, beta_end):
@@ -214,7 +214,7 @@ class NoiseScheduler():
 
         steps = torch.linspace(0, self.num_timesteps, self.num_timesteps + 1, dtype=torch.float32)
         alphas_bar = torch.cos(((steps / self.num_timesteps) + s) / (1 + s) * (torch.acos(torch.tensor(-1.0)) / 2)) ** 2
-        self.alpha_bar = alphas_bar / alphas_bar[0]  # Normalize to start at 1
+        self.alpha_bar = alphas_bar / alphas_bar[0]
         self.alphas = self.alpha_bar[1:] / self.alpha_bar[:-1]
         self.betas = 1.0 - self.alphas
         self.betas = torch.clip(self.betas, beta_start, beta_end)
@@ -426,8 +426,6 @@ def trainConditional(model, noise_scheduler, dataloader, optimizer, epochs, run_
     model_path = os.path.join(run_name, "model.pth")
     torch.save(model.state_dict(), model_path)
     print(f"Model saved to {model_path}")
-
-    # Plot loss curve
     plt.figure(figsize=(10, 5))
     plt.plot(range(1, epochs + 1), loss_history, marker="o", linestyle="-")
     plt.xlabel("Epoch")
@@ -479,7 +477,6 @@ def train(model, noise_scheduler, dataloader, optimizer, epochs, run_name):
     torch.save(model.state_dict(), model_path)
     print(f"Model saved to {model_path}")
 
-    # Plot loss curve
     plt.figure(figsize=(10, 5))
     plt.plot(range(1, epochs + 1), loss_history, marker="o", linestyle="-")
     plt.xlabel("Epoch")
@@ -512,7 +509,7 @@ def sample(model, n_samples, noise_scheduler, return_intermediate=False):
     """ 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     n_dim = model.n_dim
-    x_t = torch.randn((n_samples, n_dim), device=device)  # Start from Gaussian noise
+    x_t = torch.randn((n_samples, n_dim), device=device)
     intermediate_steps = [] if return_intermediate else None
     
     for t in reversed(range(noise_scheduler.num_timesteps)):
@@ -566,7 +563,7 @@ def sampleConditional(model, n_samples, noise_scheduler, class_label=None, retur
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     n_dim = model.n_dim
-    x_t = torch.randn((n_samples, n_dim), device=device)  # Start from Gaussian noise
+    x_t = torch.randn((n_samples, n_dim), device=device) 
     if class_label is not None:
         class_labels = torch.full((n_samples,), class_label, dtype=torch.long, device=device)
     else:
@@ -694,7 +691,7 @@ def sampleCFG(model, n_samples, noise_scheduler, guidance_scale, class_label):
         else:
             x_t = mean
     return x_t
-    
+
 @torch.no_grad()
 def sampleSVDD(model, n_samples, noise_scheduler, reward_scale, reward_fn):
     """
@@ -827,8 +824,6 @@ def evaluate_cfg_sampling(model, classifier, noise_scheduler, guidance_scales=[0
         print(f"Evaluating with guidance scale: {scale}")
         samples = []
         labels = []
-        
-        # Generate samples for each class using the specified guidance scale
         for class_label in range(model.n_classes):
             class_samples = sampleCFG(
                 model, 
@@ -840,17 +835,16 @@ def evaluate_cfg_sampling(model, classifier, noise_scheduler, guidance_scales=[0
             samples.append(class_samples)
             labels.extend([class_label] * n_samples)
         
-        # Concatenate samples and convert labels to tensor
+
         samples = torch.cat(samples, dim=0)
         labels = torch.tensor(labels, device=device)
         
-        # Evaluate with classifier
+
         with torch.no_grad():
             logits = classifier(samples)
             predicted = logits.argmax(dim=1)
             accuracy = (predicted == labels).float().mean().item()
-            
-            # Calculate per-class accuracy
+
             class_accuracies = {}
             for class_label in range(model.n_classes):
                 class_mask = (labels == class_label)
@@ -1027,6 +1021,28 @@ def classifier_reward(samples, classifier, target_class):
         reward = probs[:, target_class]
 
     return reward
+
+
+def compute_svdd_accuracy(standard_classifier, all_samples, true_labels):
+    device = next(standard_classifier.parameters()).device
+    standard_classifier.eval()
+    
+    correct = 0
+    total = 0
+    
+    with torch.no_grad():
+        for class_label, samples in all_samples.items():
+            samples = samples.to(device)
+            outputs = standard_classifier(samples)
+            predicted_labels = torch.argmax(outputs, dim=1)
+            
+            true_class_labels = torch.full((samples.shape[0],), class_label, dtype=torch.long, device=device)
+            correct += (predicted_labels == true_class_labels).sum().item()
+            total += samples.shape[0]
+    
+    accuracy = 100 * correct / total if total > 0 else 0
+    return accuracy
+
     
 
 if __name__ == "__main__":
@@ -1093,7 +1109,6 @@ if __name__ == "__main__":
         trainConditional(model, noise_scheduler, dataloader, optimizer, epochs, run_name)
 
     elif args.mode == 'sample':
-        # Unconditional sampling
         print(f"Sampling from {run_name}")
         data_X, _ = dataset.load_dataset(args.dataset)
         model.load_state_dict(torch.load(f'{run_name}/model.pth'))
@@ -1113,7 +1128,6 @@ if __name__ == "__main__":
             ax.set_title(f"3D Samples for Class {args_name}")
             plt.savefig(f"images/Samples for {args_name}.png")
             exit(0)
-        # samples = data_X.cpu().numpy()
         plt.figure(figsize=(6, 6))
         plt.scatter(samples[:, 0], samples[:, 1], alpha=0.6, s=1)
         plt.xlabel("x1")
@@ -1122,7 +1136,6 @@ if __name__ == "__main__":
         plt.grid()
         plt.axis('equal')
         plt.savefig(f"images/Samples for {args_name}.png")
-        # plt.savefig(f"images/{args.dataset}.png")
         torch.save(samples, f'{run_name}/samples_{args.seed}_{args.n_samples}.pth')
 
     elif args.mode == 'sample_conditional':
@@ -1356,7 +1369,6 @@ if __name__ == "__main__":
         
         for class_label in range(n_classes):
             reward_fn = lambda x: classifier_reward(x, standard_classifier, class_label)
-            # samples = sampleCFG(model, args.n_samples, noise_scheduler, guidance_scale=args.guidance_scale, class_label=class_label)
             reward_scale = 0.5
             samples = sampleSVDD(model, args.n_samples, noise_scheduler, reward_scale, reward_fn)
             all_samples[class_label] = samples
@@ -1369,27 +1381,11 @@ if __name__ == "__main__":
                 color=colors(class_label),
                 label=f"Class {class_label}"
             )
-        
-        plt.xlabel("x1")
-        plt.ylabel("x2")
-        plt.title(f"Samples from Conditional DDPM for All Classes")
-        plt.legend()
-        plt.grid(True)
-        plt.axis('equal')
-        plt.savefig(f"images/Samples - SVDD for {args_name}.png")
-        plt.close()
-        if data_y is not None:
-            for class_label in range(args.n_classes):
-                class_indices = (data_y == class_label).nonzero().squeeze()
-                if len(class_indices) > 0:
-                    class_data = data_X[class_indices]
-                    class_samples = all_samples[class_label]
-                    print(f"Class {class_label}:")
-                    print(f"  - Shape of ground truth data: {class_data.shape}")
-                    print(f"  - Shape of generated samples: {class_samples.shape}")
-                    print(f"  - Class-specific NLL: {get_nll(class_data.to(device), class_samples)}")
         all_samples_tensor = torch.cat([samples for samples in all_samples.values()], dim=0)
-        
+        true_labels = torch.cat([torch.full((samples.shape[0],), class_label, dtype=torch.long, device=device) for class_label, samples in all_samples.items()], dim=0)
+        svdd_accuracy = compute_svdd_accuracy(standard_classifier, all_samples, true_labels)
+        print(f"SVDD Sample Classification Accuracy: {svdd_accuracy:.2f}%")
+
         torch.save(all_samples_tensor, f'{run_name}/svdd_samples_class_{args.class_label}_scale_{args.guidance_scale}_{args.seed}_{args.n_samples}.pth')
 
     
