@@ -609,8 +609,78 @@ Here are the NLL values for the two class labels:
   \label{tab:nll_values}
 \end{table}
 
+
 As, it is evident from the NLL values and the images shown above, guidance scales 0.2 and 0.5 perform the best. With higher guidance scales, we typically lose focus on randomly generated data, and rely too much on the training labels provided, thus the NLL values are low, when another sample is chosen from the actual dataset. These observations match with the ones presented in the CFG paper too.
 
+
+We had also compared the samples generated with a simple classifier model trained, here are the accuracy results across various guidance scale values:
+
+
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{|c|c|c|}
+      \hline
+      {\bf Guidance Scale} & {\bf Accuracy for Class Label 0} & {\bf Accuracy for Class Label 1} \\
+      \hline
+      0.0 & 0.52 & 0.49 \\
+      0.2 & 0.52 & 0.50 \\
+      0.5 & 0.52 & 0.51 \\
+      0.7 & 0.52 & 0.52 \\
+      1.0 & 0.52 & 0.52 \\
+      2.0 & 0.49 & 0.55 \\
+      4.0 & 0.46 & 0.61 \\
+      8.0 & 0.44 & 0.67 \\
+      10.0 & 0.44 & 0.68 \\
+      \hline
+  \end{tabular}
+  \caption{Accuracy Values for the two class labels of the Moons Dataset}
+  \label{tab:acc_values}
+\end{table}
+
+
+As we can see, the accuracy values do not vary much across various guidance scale values. They peak around a scale of 1 (which is as per the results obtained in the paper), similar to NLL results. Higher scale values tend to bias towards one of the class labels as demonstrated in the images too. 
+
+
+
+
+\subsection*{Classifier using Conditional DDPM}
+
+The \texttt{ClassifierDDPM} class implements a classification method using a Diffusion Probabilistic Model (DDPM). The classification is performed by computing the likelihood of each class given the input, using a pre-trained conditional DDPM.
+
+Given an input $x \in \mathbb{R}^d$, we generate a noisy sample $x_t$ at a fixed timestep $t$ using the variance-preserving noise schedule:
+\begin{equation}
+x_t = \sqrt{\bar{\alpha}_t} x + \sqrt{1 - \bar{\alpha}_t} \epsilon,
+\end{equation}
+where:
+\begin{itemize}
+\item $\bar{\alpha}_t$ is the cumulative product of noise scheduling parameters,
+\item $\epsilon \sim \mathcal{N}(0, I)$ is Gaussian noise.
+\end{itemize}
+
+
+For each class label $c \in {0, 1, \dots, C-1}$, the classifier uses the conditional DDPM model to predict the noise:
+\begin{equation}
+\hat{\epsilon}_c = \text{model}(x_t, t, c),
+\end{equation}
+where $\hat{\epsilon}_c$ is the predicted noise when conditioning on class $c$.
+
+The classification score for class $c$ is computed as the negative mean squared error between the predicted and actual noise:
+\begin{equation}
+S_c = -\mathbb{E} \left[ | \hat{\epsilon}_c - \epsilon |^2 \right].
+\end{equation}
+
+This score measures how well the model’s noise prediction aligns with the actual noise for each class. A lower error implies a higher likelihood of the class being correct.
+
+To convert the classification scores into probabilities, a softmax function is applied:
+\begin{equation}
+P(c \mid x) = \frac{\exp(S_c)}{\sum_{c'} \exp(S_{c'})}.
+\end{equation}
+
+The predicted class is then obtained as:
+\begin{equation}
+\hat{c} = \arg\max_c P(c \mid x).
+\end{equation}
 
 
 
