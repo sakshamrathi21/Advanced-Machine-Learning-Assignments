@@ -1019,7 +1019,7 @@ def train_and_evaluate_cfg(model, noise_scheduler, dataset_name, guidance_scales
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=['train', 'sample', 'train_conditional', 'sample_conditional', 'sample_cfg', 'sample_multi_class'], default='sample')
+    parser.add_argument("--mode", choices=['train', 'sample', 'train_conditional', 'sample_conditional', 'sample_cfg', 'sample_multi_class', 'compare_classifiers'], default='sample')
     parser.add_argument("--noise_schedule", choices=['linear', 'cosine', 'sigmoid'], default='linear')
     parser.add_argument("--n_steps", type=int, default=None)
     parser.add_argument("--lbeta", type=float, default=None)
@@ -1251,6 +1251,68 @@ if __name__ == "__main__":
         all_samples_tensor = torch.cat([samples for samples in all_samples.values()], dim=0)
         
         torch.save(all_samples_tensor, f'{run_name}/cfg_samples_class_{args.class_label}_scale_{args.guidance_scale}_{args.seed}_{args.n_samples}.pth')
+
+    elif args.mode == 'compare_classifiers':
+        print(f"Comparing standard classifier and DDPM classifier on {args.dataset}")
+        data_X, data_y = dataset.load_dataset(args.dataset)
+        data_X = data_X.to(device)
+        data_y = data_y.to(device)
+        from sklearn.model_selection import train_test_split
+        X_train, X_test, y_train, y_test = train_test_split(
+            data_X.cpu().numpy(), data_y.cpu().numpy(), test_size=0.2, random_state=args.seed
+        )
+        X_train = torch.tensor(X_train, dtype=torch.float32).to(device)
+        X_test = torch.tensor(X_test, dtype=torch.float32).to(device)
+        y_train = torch.tensor(y_train, dtype=torch.long).to(device)
+        y_test = torch.tensor(y_test, dtype=torch.long).to(device)
+        train_dataset = torch.utils.data.TensorDataset(X_train, y_train)
+        test_dataset = torch.utils.data.TensorDataset(X_test, y_test)
+        train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
+        test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+        print("Training standard classifier...")
+        standard_classifier = Classifier(n_dim=args.n_dim, n_classes=args.n_classes).to(device)
+        standard_classifier = train_classifier(standard_classifier, train_loader, test_loader, n_epochs=args.epochs)
+        print("Setting up DDPM classifier...")
+        model_path = f'{run_name}/model.pth'
+        
+        if os.path.exists(model_path):
+            print(f"Loading DDPM model from {model_path}")
+            model.load_state_dict(torch.load(model_path))
+        else:
+            print(f"Training DDPM model (model not found at {model_path})")
+            optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+            dataloader = torch.utils.data.DataLoader(torch.utils.data.TensorDataset(data_X, data_y), 
+                                                    batch_size=args.batch_size, shuffle=True)
+            trainConditional(model, noise_scheduler, dataloader, optimizer, args.epochs, run_name)
+        ddpm_classifier = ClassifierDDPM(model, noise_scheduler)
+        print("Comparing classifier performance...")
+        standard_acc, ddpm_acc = compare_classifiers(standard_classifier, ddpm_classifier, test_loader)
+        results = {
+            "standard_classifier_accuracy": standard_acc,
+            "ddpm_classifier_accuracy": ddpm_acc,
+            "dataset": args.dataset,
+            "n_dim": args.n_dim,
+            "n_classes": args.n_classes,
+            "n_steps": args.n_steps,
+            "noise_schedule": args.noise_schedule
+        }
+        import json
+        results_path = f"{run_name}/classifier_comparison_results.json"
+        with open(results_path, 'w') as f:
+            json.dump(results, f, indent=4)
+        print(f"Results saved to {results_path}")
+        labels = ['Standard Classifier', 'DDPM Classifier']
+        accuracies = [standard_acc, ddpm_acc]
+        plt.figure(figsize=(8, 5))
+        plt.bar(labels, accuracies, color=['blue', 'orange'])
+        plt.ylabel('Accuracy (%)')
+        plt.title(f'Classifier Comparison on {args.dataset} Dataset')
+        plt.ylim(0, 100)
+        for i, v in enumerate(accuracies):
+            plt.text(i, v + 1, f"{v:.2f}%", ha='center')
+        
+        plt.savefig(f"{run_name}/classifier_comparison.png")
+        print(f"Comparison plot saved to {run_name}/classifier_comparison.png")
     
     else:
         raise ValueError(f"Invalid mode {args.mode}")
