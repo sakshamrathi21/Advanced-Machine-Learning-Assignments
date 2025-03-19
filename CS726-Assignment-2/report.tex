@@ -4,9 +4,11 @@
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{amsmath,amsfonts,amssymb}
+\usepackage{url}
 \usepackage{geometry}
 \usepackage{fancyhdr}
 \usepackage{graphicx}
+\usepackage{hyperref}
 \usepackage{subcaption}
 \usepackage{caption}
 \usepackage{titlesec}
@@ -573,7 +575,12 @@ We train a model on the Albatross dataset using our best-performing hyperparamet
 \paragraph{Model File and Sampling Process}  
 The trained model is saved as 
 \\
-\texttt{exps/ddpm\_64\_200\_0.001\_0.05\_albatross\_sigmoid/model.pth}. Using this model, we generate samples following the given deterministic process:  
+\texttt{exps/ddpm\_64\_200\_0.001\_0.05\_albatross\_sigmoid/model.pth} which is not included in the submission due to size constraints. However, it can be downloaded from the following link: \url{https://drive.google.com/file/d/1gu2f2KsBqsq9T9Owb3PtY9SyXM2TjMMf/view?usp=sharing}.
+After downloading, place the model file in the same directory structure as follows:
+\begin{verbatim}
+exps/ddpm_64_200_0.001_0.05_albatross_sigmoid/model.pth
+\end{verbatim}
+Using this model, we generate samples by using the command "python3 reproduce.py" following the given deterministic process:  
 \begin{itemize}
     \item We initialize $x_T$ using \texttt{data/albatross\_prior\_samples.npy}, which contains 32,561 vectors sampled from $\mathcal{N}(0, I_d)$.
     \item In step 4 of Algorithm 2 (from [2]), we set $z = 0$, ensuring deterministic execution.
