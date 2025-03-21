@@ -80,7 +80,8 @@ class TextGenerator:
         '''    
         # TODO:
         generated_tokens = []
-        for _ in range (self.max_output_len):
+        for i in range (self.max_output_len):
+            print(i)
             logits = self.model(input_ids).logits
             logit_last_token = logits[:, -1, :]
             next_token = torch.argmax(logit_last_token, dim =-1)
