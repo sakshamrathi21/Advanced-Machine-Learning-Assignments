@@ -82,19 +82,24 @@ class TextGenerator:
         '''    
         # TODO:
         generated_tokens = []
-        for i in range (self.max_output_len):
-            print(i)
+        for i in range(self.max_output_len):
+            print(f"Step {i}:")
+
             logits = self.model(input_ids).logits
             logit_last_token = logits[:, -1, :]
-            next_token = torch.argmax(logit_last_token, dim =-1)
-            token_str = self.tokenizer.decode(next_token.item())  # Convert token ID to actual token
-            print(f"Generated Token: {token_str}")
+            next_token = torch.argmax(logit_last_token, dim=-1)
+
+            token_str = self.tokenizer.decode(next_token.item())  # Decode token ID to string
+            print(f"Generated Token: {token_str}")  # Print the generated token
+
             generated_tokens.append(next_token.item())
 
             if next_token.item() == self.eos_token_id:
                 break
 
             input_ids = torch.cat([input_ids, next_token.unsqueeze(0)], dim=-1)
+            input_text = self.tokenizer.decode(input_ids.squeeze(0))  # Decode entire sequence
+            print(f"Updated Input: {input_text}")  # Print the full decoded sequence
 
         return torch.tensor(generated_tokens, dtype=torch.long)
         # raise NotImplementedError
