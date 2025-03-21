@@ -94,26 +94,43 @@ class TextGenerator:
             return torch.tensor(generated_tokens, dtype=torch.long)
         
     def random_sampling(
-        self, 
-        input_ids: Int[torch.Tensor, "batch in_seq_len"]
-    ) -> Int[torch.Tensor, "batch out_seq_len"]:
+    self, 
+    input_ids: Int[torch.Tensor, "batch in_seq_len"]
+) -> Int[torch.Tensor, "batch out_seq_len"]:
         '''
-            Implement Random sampling technique. (refer assignment document for more details)
-
-            - batch size is always 1; no need to handle generation of multiple sequences simultaneously.
-            - stop decoding when: 
-                - the end-of-sequence (EOS) token is generated `self.eos_token_id`
-                - the predefined maximum number of tokens is reached `self.max_output_len`
+            Implement Random sampling technique.
             
-            Return an integer tensor containing only the generated tokens (excluding input tokens).
-            
-            Input:
-                input_ids: tensor of shape (1, P)
-            Returns:
-                tensor of shape (T,), where T <= self.max_output_len
+            Sample from the probability distribution after applying temperature.
         '''    
-        # TODO:
-        raise NotImplementedError
+        generated_tokens = []
+        current_input_ids = input_ids.clone()
+        past_key_values = None
+        
+        for _ in range(self.max_output_len):
+            with torch.no_grad():
+                outputs = self.model(
+                    input_ids=current_input_ids, 
+                    past_key_values=past_key_values, 
+                    use_cache=True
+                )
+            
+            next_token_logits = outputs.logits[0, -1, :]
+            past_key_values = outputs.past_key_values
+            next_token_logits = next_token_logits / self.tau
+            probs = torch.softmax(next_token_logits, dim=-1)
+            next_token = torch.multinomial(probs, num_samples=1)
+            next_token_id = next_token.item()
+            generated_tokens.append(next_token_id)
+            if self.tokenizer:
+                token_str = self.tokenizer.decode(next_token_id)
+                print(f"Generated Token: {token_str}")
+                if len(generated_tokens) % 10 == 0:
+                    full_sequence = self.tokenizer.decode(generated_tokens)
+                    print(f"Generated so far: {full_sequence}")
+            if next_token_id == self.eos_token_id:
+                break
+            current_input_ids = next_token.unsqueeze(0)
+        return torch.tensor(generated_tokens, dtype=torch.long)
     
     def topk_sampling(
         self, 

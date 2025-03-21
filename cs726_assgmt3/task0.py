@@ -54,7 +54,7 @@ if __name__ == "__main__":
     parser.add_argument("--max-input-len","-mil", type=int, required=False, default=1000, help="Maximum length of the input sequence.")
     parser.add_argument("--max-output-len","-mol", type=int, required=False, default=50, help="Maximum number of new tokens to be generated.")
     parser.add_argument("--decoding-strategy","-ds", type=str, required=False, default="greedy", choices=["greedy", "random", "topk", "nucleus"], help="The decoding strategy to be used during inference.")
-    parser.add_argument("--tau","-t", type=int, required=False, default=1, help="Temperature value to be used with Random Sampling.")
+    parser.add_argument("--tau","-t", type=float, required=False, default=1, help="Temperature value to be used with Random Sampling.")
     parser.add_argument("--k","-k", type=int, required=False, default=10, help="k value to be used in Top-k and Nucleus sampling.")
     parser.add_argument("--p","-p", type=int, required=False, default=0.9, help="p value to be used in Nucleus sampling.")
     parser.add_argument("--debug","-db",type=bool,default=True, help="To print debugging statements.")
