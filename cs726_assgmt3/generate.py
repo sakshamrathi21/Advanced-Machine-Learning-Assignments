@@ -151,7 +151,40 @@ class TextGenerator:
             Returns:
                 tensor of shape (T,), where T <= self.max_output_len
         '''    
-        # TODO:
+        generated_tokens = []
+        current_ids = input_ids
+        past_key_values = None
+        
+        for i in range(self.max_output_len):
+            print("Step: ", i)
+            outputs = self.model(
+                    input_ids=current_ids,
+                    past_key_values=past_key_values,
+                    use_cache=True
+            )
+            logits = outputs.logits
+            logit_last_token = logits[:, -1, :]
+            past_key_values = outputs.past_key_values
+            
+            topk_logits, topk_indices = torch.topk(logit_last_token, self.k, dim=-1)
+            
+            topk_probs = nn.functional.softmax(topk_logits, dim=-1)
+            next_token_idx = torch.multinomial(topk_probs, num_samples=1)
+            next_token = topk_indices.gather(-1, next_token_idx).squeeze(-1)
+            
+            if next_token.item() == self.eos_token_id:
+                break
+            
+            generated_tokens.append(next_token.item())
+            if self.tokenizer:
+                token_str = self.tokenizer.decode(next_token.item())
+                print(f"Generated Token: {token_str}")
+                if i % 10 == 0:
+                    full_sequence = self.tokenizer.decode(generated_tokens)
+                    print(f"Generated so far: {full_sequence}")
+            current_ids = next_token.unsqueeze(0)
+        
+        return  torch.tensor(generated_tokens, dtype=torch.long)
         raise NotImplementedError
     
     def nucleus_sampling(
