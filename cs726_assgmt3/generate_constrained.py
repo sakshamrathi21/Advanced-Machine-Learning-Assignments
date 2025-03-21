@@ -27,10 +27,8 @@ class ConstrainedTextGenerator:
             Do not edit.
         '''
         self.model = model
-        
         self.max_output_len = max_output_len
         self.eos_token_id = eos_id
-        
         self.tokenizer = tokenizer
 
     def __call__(
@@ -54,6 +52,74 @@ class ConstrainedTextGenerator:
                 tensor of shape (T,), where T <= self.max_output_len
         '''    
         # TODO:
-        raise NotImplementedError
+        trie = {}
+        for word in word_list:
+            word_tokens = self.tokenizer.encode(word, add_special_tokens=False)
+            current = trie
+            for token in word_tokens:
+                if token not in current:
+                    current[token] = {}
+                current = current[token]
+            current['_end_'] = True
+        generated_tokens = []
+        current_input_ids = input_ids.clone()
+        used_words = set()
+        past_key_values = None
+        for _ in range(self.max_output_len):
+            with torch.no_grad():
+                outputs = self.model(current_input_ids, use_cache=True, past_key_values=past_key_values)
+                logits = outputs.logits[:, -1, :]
+                past_key_values = outputs.past_key_values
+            next_token_id = self._get_next_token(logits, trie, used_words, generated_tokens, word_list)
+            if next_token_id == self.eos_token_id:
+                break
+            generated_tokens.append(next_token_id)
+            current_input_ids = torch.tensor([[next_token_id]], device=current_input_ids.device)
+            self._update_trie_state(trie, generated_tokens, used_words)
+        return torch.tensor(generated_tokens)
+    
+
+    def _get_next_token(self, logits, trie, used_words, generated_tokens, word_list):
+        probs = torch.softmax(logits, dim=-1)
+        sorted_probs, sorted_indices = torch.sort(probs[0], descending=True)
+        current_trie = trie
+        for token in generated_tokens:
+            if token in current_trie:
+                current_trie = current_trie[token]
+            else:
+                current_trie = trie
+                break
+        for idx in range(len(sorted_indices)):
+            token_id = sorted_indices[idx].item()
+            if token_id in current_trie:
+                return token_id
+            if current_trie == trie and self._is_delimiter(token_id):
+                return token_id
+            if token_id == self.eos_token_id:
+                if len(used_words) == len(word_list):
+                    return token_id
+        return sorted_indices[0].item()
+    
+    def _is_delimiter(self, token_id):
+        token = self.tokenizer.decode([token_id])
+        return token.isspace() or (len(token) == 1 and not token.isalnum())
+    
+    def _update_trie_state(self, trie, generated_tokens, used_words):
+        current = trie
+        word_tokens = []
+        for i in range(len(generated_tokens) - 1, -1, -1):
+            token_id = generated_tokens[i]
+            if self._is_delimiter(token_id):
+                break
+            if token_id in current:
+                word_tokens.insert(0, token_id)
+                current = current[token_id]
+                if '_end_' in current:
+                    word = self.tokenizer.decode(word_tokens)
+                    used_words.add(word)
+                    break
+            else:
+                break
+    
         
         
