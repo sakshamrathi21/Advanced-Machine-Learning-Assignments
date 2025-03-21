@@ -66,53 +66,32 @@ class TextGenerator:
         input_ids: Int[torch.Tensor, "batch in_seq_len"],
     ) -> Int[torch.Tensor, "batch out_seq_len"]: 
             generated_tokens = []
-            
-            # Use the original input_ids for the first step
             current_ids = input_ids
-            
-            # Initialize cache
             past_key_values = None
-            
             for i in range(self.max_output_len):
                 print("Step: ", i)
-                # Forward pass through the model
                 outputs = self.model(
                     input_ids=current_ids,
                     past_key_values=past_key_values,
                     use_cache=True
                 )
-                
-                # Get logits and update key-value cache
                 logits = outputs.logits
                 past_key_values = outputs.past_key_values
-                
-                # Get the logits for the last token
                 logit_last_token = logits[:, -1, :]
-                
-                # Select the token with the highest probability
                 next_token = torch.argmax(logit_last_token, dim=-1)
-                
-                # Add the generated token to our list
                 token_id = next_token.item()
                 generated_tokens.append(token_id)
-                
-                # Print debug info if enabled
                 if self.tokenizer:
                     token_str = self.tokenizer.decode(token_id)
                     print(f"Generated Token: {token_str}")
                     if i % 10 == 0:
                         full_sequence = self.tokenizer.decode(generated_tokens)
                         print(f"Generated so far: {full_sequence}")
-                
-                # Check if we've generated the EOS token
                 if token_id == self.eos_token_id:
                     break
-                
-                # Update input_ids for the next step (just the new token)
                 current_ids = next_token.unsqueeze(0)
             
             return torch.tensor(generated_tokens, dtype=torch.long)
-        # raise NotImplementedError
         
     def random_sampling(
         self, 
