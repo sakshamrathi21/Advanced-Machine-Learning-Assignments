@@ -65,43 +65,53 @@ class TextGenerator:
         self,
         input_ids: Int[torch.Tensor, "batch in_seq_len"],
     ) -> Int[torch.Tensor, "batch out_seq_len"]: 
-        '''
-            Implement Greedy decoding technique. (refer assignment document for more details)
-
-            - batch size is always 1; no need to handle generation of multiple sequences simultaneously.
-            - stop decoding when: 
-                - the end-of-sequence (EOS) token is generated `self.eos_token_id`
-                - the predefined maximum number of tokens is reached `self.max_output_len`
+            generated_tokens = []
             
-            Return an integer tensor containing only the generated tokens (excluding input tokens).
+            # Use the original input_ids for the first step
+            current_ids = input_ids
             
-            Input:
-                input_ids: tensor of shape (1, P)
-            Returns:
-                tensor of shape (T,), where T <= self.max_output_len
-        '''    
-        # TODO:
-        generated_tokens = []
-        for i in range(self.max_output_len):
-            print(f"Step {i}:")
-
-            logits = self.model(input_ids).logits
-            logit_last_token = logits[:, -1, :]
-            next_token = torch.argmax(logit_last_token, dim=-1)
-
-            token_str = self.tokenizer.decode(next_token.item())  # Decode token ID to string
-            print(f"Generated Token: {token_str}")  # Print the generated token
-
-            generated_tokens.append(next_token.item())
-
-            if next_token.item() == self.eos_token_id:
-                break
-
-            input_ids = torch.cat([input_ids, next_token.unsqueeze(0)], dim=-1)
-            input_text = self.tokenizer.decode(input_ids.squeeze(0))  # Decode entire sequence
-            print(f"Updated Input: {input_text}")  # Print the full decoded sequence
-
-        return torch.tensor(generated_tokens, dtype=torch.long)
+            # Initialize cache
+            past_key_values = None
+            
+            for i in range(self.max_output_len):
+                print("Step: ", i)
+                # Forward pass through the model
+                outputs = self.model(
+                    input_ids=current_ids,
+                    past_key_values=past_key_values,
+                    use_cache=True
+                )
+                
+                # Get logits and update key-value cache
+                logits = outputs.logits
+                past_key_values = outputs.past_key_values
+                
+                # Get the logits for the last token
+                logit_last_token = logits[:, -1, :]
+                
+                # Select the token with the highest probability
+                next_token = torch.argmax(logit_last_token, dim=-1)
+                
+                # Add the generated token to our list
+                token_id = next_token.item()
+                generated_tokens.append(token_id)
+                
+                # Print debug info if enabled
+                if self.tokenizer:
+                    token_str = self.tokenizer.decode(token_id)
+                    print(f"Generated Token: {token_str}")
+                    if i % 10 == 0:
+                        full_sequence = self.tokenizer.decode(generated_tokens)
+                        print(f"Generated so far: {full_sequence}")
+                
+                # Check if we've generated the EOS token
+                if token_id == self.eos_token_id:
+                    break
+                
+                # Update input_ids for the next step (just the new token)
+                current_ids = next_token.unsqueeze(0)
+            
+            return torch.tensor(generated_tokens, dtype=torch.long)
         # raise NotImplementedError
         
     def random_sampling(
