@@ -57,7 +57,7 @@ if __name__ == "__main__":
     parser.add_argument("--tau","-t", type=int, required=False, default=1, help="Temperature value to be used with Random Sampling.")
     parser.add_argument("--k","-k", type=int, required=False, default=10, help="k value to be used in Top-k and Nucleus sampling.")
     parser.add_argument("--p","-p", type=int, required=False, default=0.9, help="p value to be used in Nucleus sampling.")
-    parser.add_argument("--debug","-db",type=bool,default=False, help="To print debugging statements.")
+    parser.add_argument("--debug","-db",type=bool,default=True, help="To print debugging statements.")
     
     args = parser.parse_args() 
     print(args)
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     tokenizer.pad_token = tokenizer.eos_token    
     model = AutoModelForCausalLM.from_pretrained(args.model_name, torch_dtype=torch.float16, token=args.hf_token).to(device)
     model.eval()
-    generator = TextGenerator(model=model, decoding_strategy=args.decoding_strategy, eos_id=tokenizer.eos_token_id, max_output_len=args.max_output_len, tau=args.tau, k=args.k, p=args.p)
+    generator = TextGenerator(model=model, decoding_strategy=args.decoding_strategy, eos_id=tokenizer.eos_token_id, max_output_len=args.max_output_len, tau=args.tau, k=args.k, p=args.p, tokenizer=tokenizer)
     
     # Load dataset
     dataloader = get_dataloader(tokenizer, args.hf_token, max_input_len=args.max_input_len)

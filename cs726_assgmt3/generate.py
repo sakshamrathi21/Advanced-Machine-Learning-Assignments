@@ -17,7 +17,8 @@ class TextGenerator:
         max_output_len: int = 10,
         tau: int = 1,
         k: int = 10,
-        p: int = 0.5
+        p: int = 0.5,
+        tokenizer=None
     ) -> None:
         '''
             Initialize the TextGenerator class.
@@ -34,6 +35,7 @@ class TextGenerator:
         '''
         self.model = model
         self.decoding_strategy = decoding_strategy
+        self.tokenizer = tokenizer
         
         self.max_output_len = max_output_len
         self.eos_token_id = eos_id
@@ -85,6 +87,8 @@ class TextGenerator:
             logits = self.model(input_ids).logits
             logit_last_token = logits[:, -1, :]
             next_token = torch.argmax(logit_last_token, dim =-1)
+            token_str = self.tokenizer.decode(next_token.item())  # Convert token ID to actual token
+            print(f"Generated Token: {token_str}")
             generated_tokens.append(next_token.item())
 
             if next_token.item() == self.eos_token_id:
