@@ -51,7 +51,7 @@ CUDA_VISIBLE_DEVICES=0 python task0.py --hf-token "hf_cqMTyQCiIjFrhvOsDefddEjwvB
 #### Task 1
 Similar to the previous task, you can run the script as follows:
 ```bash
-CUDA_VISIBLE_DEVICES=0 python task1.py --hf-token "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" --word_list <path to the word_lists.txt file>
+CUDA_VISIBLE_DEVICES=0 python task1.py --hf-token "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" --word-list word_lists.txt
 ```
 
 #### Task 2
@@ -63,5 +63,6 @@ CUDA_VISIBLE_DEVICES=0 python task2.py --hf-token "hf_cqMTyQCiIjFrhvOsDefddEjwvB
 
 2. **Multiple head decoding**
 ```bash
-CUDA_VISIBLE_DEVICES=0 python task2.py --hf-token "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" --decoding-strategy "multi-head" --beam-width <beam width> --use-no-medusa-heads <no of medusa heads to be used>
+CUDA_VISIBLE_DEVICES=0 python task2.py --hf-token "du -sh ~/*
+" --decoding-strategy "multi-head" --beam-width <beam width> --use-no-medusa-heads <no of medusa heads to be used>
 ```
