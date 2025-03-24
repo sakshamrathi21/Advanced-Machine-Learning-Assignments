@@ -178,10 +178,57 @@ ROUGE-2: 0.035088629933956283
 ROUGE-LCS: 0.1170539764521488
 \end{verbatim}
 
+\subsection{Top-k Sampling}
+Here is how Top-k sampling is implemented by selecting the greatest k logits:
+\begin{verbatim}
+  topk_logits, topk_indices = torch.topk(logit_last_token, self.k, dim=-1)
+  topk_probs = nn.functional.softmax(topk_logits, dim=-1)
+  next_token_idx = torch.multinomial(topk_probs, num_samples=1)
+  next_token = topk_indices.gather(-1, next_token_idx).squeeze(-1)
+\end{verbatim}
+This method first selects the top-k logits (highest probabilities) from the vocabulary, 
+normalizes them using softmax to form a probability distribution, and then samples the 
+next token from this distribution.
 
+\subsubsection{$k = 5$}
+Sample run:
+\begin{verbatim}
+Example: 9/50
 
+Reference: each city in punjab has varied preferences like people in amritsar are 
+particularly fond of amritsari kulche stuffed paranthas and milk products
 
+Ground Truth: "every city of punjab is loved by everyone just like amritsar people
+are special amritsar kulche barvaan parathas and milk products"
 
+\end{verbatim}
+Scores:
+\begin{verbatim}
+BLEU: 0.24757281553398058
+ROUGE-1: 0.24637532114470517
+ROUGE-2: 0.06982793622619132
+ROUGE-LCS: 0.18258561511936278
+\end{verbatim}
+
+\subsubsection{$k = 10$}
+Sample run:
+\begin{verbatim}
+Example: 4/50
+
+Reference: ashoka started making extensive use of stone for sculptures and great 
+monuments whereas the previous tradition consisted of working with wood and clay
+
+Ground Truth: ashok started to create statues sculptures and spectacular monuments
+by using stones whereas the old traditional way is the use of wood and earth
+
+\end{verbatim}
+Scores:
+\begin{verbatim}
+BLEU: 0.24899274778404515
+ROUGE-1: 0.2583936169635166
+ROUGE-2: 0.07972418861869043
+ROUGE-LCS: 0.1984233891953222
+\end{verbatim}
 
 
 \end{document}
