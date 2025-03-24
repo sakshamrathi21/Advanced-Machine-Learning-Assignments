@@ -6,7 +6,8 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: an appearance is a bunch of attributes related to the service person like their shoes clothes tie jewellery hairstyle makeup watch cosmetics perfume etc
-Ground Truth: सेवा संबंधी लोगों के लिए इंग्लिश का भेष कई
+Ground Truth: sewa sambhandi logon ke liye bheesh kai guuno ka sanyojan hai
+jaisa ki unka joote kapde tie aabhushan
 
 
 Example: 2/50
@@ -16,7 +17,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: ajanta located in the aurangabad district of maharashtra has twentynine caitya and vihara caves decorated with sculptures and paintings from the first century bce
-Ground Truth: १) पाकिस्तान के पंजाब जिलेमें हैं उन्तीस चैत्
+Ground Truth: maharashtra is the capital of aurangabad district it has 54 ancient temples and viharas that were built in 5th century ad the sculptures of the temples and viharas
 
 
 Example: 3/50
@@ -26,11 +27,11 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: body colour gets merged with the outer line creating the effect of volume
-Ground Truth: the effect of change makes the bodys color fade outside the boundary line
+Ground Truth: vistaar ka asar banaatee shariir ka rang baahree rekhame ghulmil jaata hai
 
-### explanation
+translation
 
-the effect of change makes the bodys color fade outside the boundary line the sentence is saying that change causes
+the effect of the spectrum of color is
 
 
 Example: 4/50
@@ -40,7 +41,12 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: ashoka started making extensive use of stone for sculptures and great monuments whereas the previous tradition consisted of working with wood and clay
-Ground Truth: अशोक ने व्यापक रूप से मूर्तियों और शानदार स्मार
+Ground Truth: ashok started to create statues sculptures and magnificent monuments by using stone in a very practical manner while he used traditional lumber and dirt before him
+
+
+## conversion to json
+
+```json
 
 
 Example: 5/50
@@ -50,7 +56,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: potatoes mixed in masalas coated in besan batter and deep fried to perfection form this delicious and famous dish of maharashtra
-Ground Truth: in this famous and delicious dish of maharashtra the masalas are cooked together in a thick paste of aluon besan is sprinkled with the leaf of basin and then it
+Ground Truth: "in this famous and delicious maharashtrian dish onions are cooked along with the spicy masala and then a layer of besan is spread over it then it is well cooked"
 
 
 Example: 6/50
@@ -60,7 +66,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: chettinad cuisine is the cuisine of a community called the nattukotai chettiars or nagarathars as they call themselves from the chettinad region of tamil nadu
-Ground Truth: "tamil nadus chettyar nattukkoyam community or tamil nadus chettiar community eats in chettiar region of nattukkoyam tamil nadu"
+Ground Truth: chettinaad is the name of a food in tamil nadu and chettinad district it is a community of people who call themselves nagathar
 
 
 Example: 7/50
@@ -70,7 +76,11 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: cinnamon is native to india and as such its uses range from that of a flavoring agent to a medicinal agent
-Ground Truth: dalchini mool rup se bharat ki hai aisa rup mene iska prayog swasdishthakarak se likar aushadhiya kaarak ke roop mene
+Ground Truth: दिखा हुए रहा
+
+the above sentence means
+
+daalchini is an original form of india and it is made in this form and its use is from flavor enhan
 
 
 Example: 8/50
@@ -80,7 +90,13 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: make this into powder with a dry grinder or in a stone pestle
-Ground Truth: sukhe grāinder mēñ yā phīr pattar ke mūsal mēñ iska chūrn baṇā lēn
+Ground Truth: हिन्दी संस्करण
+
+translation
+
+if you want to make a circle in stone or in the sand make one with your fingers in the sand
+
+completion
 
 
 Example: 9/50
@@ -90,7 +106,11 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: each city in punjab has varied preferences like people in amritsar are particularly fond of amritsari kulche stuffed paranthas and milk products
-Ground Truth: punjab is loved by the people of every city of punjab just like amritsar people are especially fond of amritsari kulcha baraav and doodh
+Ground Truth: "every city of punjab is loved by everyone just like amritsar people are special amritsar kulche barvaan parathas and milk products"
+
+## explanation
+
+the first
 
 
 Example: 10/50
@@ -100,7 +120,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: send rama with the sage and send lakshmana too
-Ground Truth: ram gave both rishi and lakshman away
+Ground Truth: আপনি যুক্তরাষ্ট্রিক অধিনায়ক যে অনুমা
 
 
 Example: 11/50
@@ -110,12 +130,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: but mangal pandeys brave deed was done through devotion to a high and noble principle
-Ground Truth: mangalpande made this courageous and great achievement in the name of the principle of elevation and perfection
-
-
-## explanation
-
-the translation should not be wordforword but should capture
+Ground Truth: parantu mangaḷ pāṇde ne yah sāhasik kāranāmā eka unche aśreṣṭa siddāṃtā ke prapti samarpana ke le
 
 
 Example: 12/50
@@ -125,7 +140,9 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: once the onions are translucent add the marinated mutton with turmeric powder and saute for some time until all the spices are absorbed in the mutton for about 56 minutes
-Ground Truth: pyaj jab pabhasi ho jaaye to usmain masalon ke misran mein kuch samay se rakhe gaye maans aur pisii haldi daal kar 56 min
+Ground Truth: the translation to english should be
+
+once the onions have been fried add the potatoes and cook for 56 minutes stirring occasionally until the onions are soft and the potatoes are tender
 
 
 Example: 13/50
@@ -135,15 +152,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: hitopadesa is a book of worldly wisdom presented through the characters of birds animals and humans
-Ground Truth: the book contains descriptions of the characters of animals birds and humans in the form of universal knowledge
-
-## input
-
-the sentence is a sentence with the following format
-
-hindi sentence
-
-हितो
+Ground Truth: मनुष्यों उपायित्व को प्राप्त करने से भी उत्सा
 
 
 Example: 14/50
@@ -153,10 +162,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: the purpose of the book appears to encourage proficiency in sanskrit expression and the knowledge of wise behaviour
-Ground Truth: "the purpose of a book is to make the knowledge of wisdom discrimination and behavior in sanskrit which is praised easy"
-\end{code}
-
-comment im not sure what you want us
+Ground Truth: ऐसा प्रतीत होता है कि पुस्तक का उद्देश्य संस्
 
 
 Example: 15/50
@@ -166,8 +172,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: professor asitkumar bandyopadhyay played a pioneering role in compiling the complete history of his hometown howrah titled as howrah saharer itibrrito (first and second volume) in 199
-Ground Truth: ```
-"professor_asitkuamr_bandopadhyay_has_made_important_contribution_to_history_of_havardha_city_havarda_in_the_form_
+Ground Truth: the professor ashok banodhyay has written 1994 and 1995 in his history of his home hauza nagar in the whole of hauza city (first and second part) by making
 
 
 Example: 16/50
@@ -177,7 +182,9 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: the front of the caitya hall is dominated by the motif of a semicircular caitya arch with an open front that has a wooden facade and in some cases there is no dominating caitya
-Ground Truth: "there is no main door of the hall of caitanya it has only halfopen door on either side on that side there is a pillar of wood there is no door of the hall of caitanya in front"
+Ground Truth: translates to
+
+"there is a halfturn in the middle of the courtyard in front of chaitanyas house it is a round structure with a door in the middle there is an
 
 
 Example: 17/50
@@ -187,10 +194,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: generations ofmaharaj and khansamas (as expert chefs have traditionally been called in india) have perfected the recipes over centuries and these recipes have passed through oral tradition over thousands of
-Ground Truth: महाराजों
-खानसामों
-पाकविधियों
-परिपूर्ण कर दिया है
+Ground Truth: maharajons and khaansamos (as the traditional kushal rasoiyons are said to have been the mainstay of indian cookery) have been responsible for preserving these pakhvidhi
 
 
 Example: 18/50
@@ -200,7 +204,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: the preparation is traditionally done by a vasta waza or head chef with the assistance of a court of wazas or chefs
-Ground Truth: "the preparative and decorative work of the drummers and drummers of the rasiya band is being done with the help of the help of the traditional way or it is done by the leader of the rasiya band"
+Ground Truth: परम्परिक रूप से रसोइयों के दल की सहायता से तैया
 
 
 Example: 19/50
@@ -210,9 +214,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: pav bhaji it is a fast food dish from maharashtra consisting of a thick vegetable curry (bhaji) usually prepared in butter and served with a soft bread roll (pav)
-Ground Truth: "this is a fast food from maharashtra which has vegetables in its ingredients which is made by mixing it in curry and it is eaten with a normal bread roll called pav"
-
-answer
+Ground Truth: pav bahji this is one of the fast food dishes of maharashtra in which vegetables are cooked in a thick gravy made of oil and onion and garlic which is then mixed with
 
 
 Example: 20/50
@@ -222,7 +224,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: the kashmiri compositions of lal ded and habba khatoon are known for their mystical flavour and intense agony of expression mirabais compositions in rajasthani is known for
-Ground Truth: हब्बा खातून और लल्लद्यद की कश्मीरी रचनाएं �
+Ground Truth: "हब्बा खातून और लल्लद्यद की कश्मीरी रचनाएं ��
 
 
 Example: 21/50
@@ -232,9 +234,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: the bagh caves consisting of buddhist mural paintings are located 97 km from the dhar district of madhya pradesh
-Ground Truth: 97 km which is located in the center of the district of the state of haryana the bulls which are painted with buddha are the center of worship of the hindus
-
-completion
+Ground Truth: bagh gufaen jinmen bauddh bhitti chitra banaye hue hain madhyapradeash ka dhar zilhe se 97 km ki duree par
 
 
 Example: 22/50
@@ -244,9 +244,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: the usual meaning of the word mula in sanskrit literature is the root of a plant or tree but figuratively the foot or lowest part or bottom of anything
-Ground Truth: "the root word in sanskrit literature is the stem of any tree or plant although figuratively it may refer to any part of a thing"
-
-the answer is correct but not complete it should have been "the root word
+Ground Truth: "the root word of sanskrit literature has a general meaning of the seed of the tree or the stem although in its figurative sense this word can be applied to any object"
 
 
 Example: 23/50
@@ -256,15 +254,9 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: indus valley civilisation is known for its technological knowledge in a variety of fields
-Ground Truth: sindhu ghat is known as a hub of technological knowledge
+Ground Truth: "the sindh ghat has a wide variety of knowledge in its technology which is known in different regions"
 
-## input format
-
-a string representing the sentence in hindi to translate
-
-## output format
-
-a string representing the translated sentence in english
+answer सिंधु घाटी सभ्यता
 
 
 Example: 24/50
@@ -274,13 +266,12 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: all the kauravas die; only the five pandava brothers and krishna survive
-Ground Truth: sabhi kaavar mar jaatayen; keeval paanch pandav bhai aur krishna jeevit bachatayen
+Ground Truth: all the kurus die; only five pandava brothers and krishna are alive
 
 
-### solution
+## explanation
 
-```
-import sys
+the sentence is in the past tense so we have to use the "
 
 
 Example: 25/50
@@ -290,7 +281,8 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: the battle rages for eighteen days and ends with the defeat of the kauravas
-Ground Truth: युद्ध दिनों तक चलता रहता है और कौरवों की पराज
+Ground Truth: yuddh athaara dinom tak chala rahataa hai aur kaauravon ki paraajay ke saath samapta hai
+the war continued for 18 days and the
 
 
 Example: 26/50
@@ -300,7 +292,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: the central story of the mahabharata is a conflict over succession to the throne of hastinapura a kingdom just north of modern delhi that was the ancestral realm of a tribe most commonly known as the bhar
-Ground Truth: mahabharat ki kendraik katha hastinapur ke sigharasan par uttraradhikaree ke liye sngarsh ki kahani hai ek a
+Ground Truth: महाभारत की केंद्रीय कथा हस्तिनापुर के सिंहासन पर
 
 
 Example: 27/50
@@ -310,11 +302,9 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: the number of vegetarians exceeds the number of nonvegetarians in karnataka; therefore their cuisine mainly consists of vegetarian dishes
-Ground Truth: karnataka has a higher proportion of vegans than vegetarians hence vegan food is the main course of their diet
+Ground Truth: english translation 
 
-## explanation
-
-the word शाकाहारी
+in karnataka vegetarian population is higher than nonvegetarian population; therefore the main dish at mealtimes is vegetarian
 
 
 Example: 28/50
@@ -324,7 +314,10 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: he is answered by sanjaya who relates what is happening on the battlefield
-Ground Truth: sanjay told him what is happening in the battlefield
+Ground Truth: "sunjay tells her that hed been fighting in a battlefield and that hes lost his way"
+
+answer \begin{code}
+sunjay told her that he had been fighting in a battle
 
 
 Example: 29/50
@@ -334,18 +327,21 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: the two epics found in tamil are cilapathikaram and manimekalai
-Ground Truth: हैं।
+Ground Truth: the following two great epics of tamil are coming in the tamil
 
-my solution
 
-\begin{code}
-import re
 
-def main()
-    hindi = input()split( )
-    translation = []
+ 
 
-    for i in range(0
+### hints
+
+1
+
+2
+
+3
+
+4
 
 
 Example: 30/50
@@ -355,11 +351,12 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: the use of chilli powder in this region is done cautiously
-Ground Truth: this regions use of potato flour should be done with caution
+Ground Truth: मिर्च के पाउडर का उपयोग
 
-input
+my attempt
 
-this region mirchi ke pauder ka upyog saavdhani se kiyata hai
+i think i have to use a regex for this
+\begin{
 
 
 Example: 31/50
@@ -369,16 +366,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: the word yoga is derived from the sanskrit root yuj meaning to join or to yoke or to unite
-Ground Truth: योजन
-
-explanation
-yojan = unit of distance = 12 miles = 20 km
-
-answer
-योजन
-
-explanation
-yojan = unit
+Ground Truth: yoga is a sanskrit word that comes from the root yoj which means to join or unite and has the meaning of connecting uniting or associating with
 
 
 Example: 32/50
@@ -388,7 +376,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: todays odissi has evolved from the endless sculptures in various motifs carved on the temple walls of orissa
-Ground Truth: today in the odissi dance of udishas temple different decorative patterns on the walls are created with vivid images
+Ground Truth: "todays odissi dance in udise temple has made various paintings in various forms on the walls of its temple"
 
 
 Example: 33/50
@@ -398,7 +386,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: vasishtha now turned to the king and spoke gently "it ill becomes you king to refuse having promised once"
-Ground Truth: हाल ही में इसे हिंदी से अंग्रेजी में इंग्लिश
+Ground Truth: 1 अब राजा और शोभा का वचन हैं कि वह उससे मुक
 
 
 Example: 34/50
@@ -408,13 +396,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: only when he realizes the extent of arjunas despondency does krishna change his attitude and start teaching the mysteries of dharmic action in this world
-Ground Truth: अर्जुन
-
-the sentence should be translated as
-
-"when they only then understood arjuns despair krishna started to tell the world the secret of the war"
-
-completion
+Ground Truth: kabhi kisi ko kabhi kisi ki haatash ka pahla samay kabhi kisi ko kabhi kisi ka hattash ka samay samjh me aa gaya krish
 
 
 Example: 35/50
@@ -424,10 +406,10 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: as you add the rice flour into the container in between you may also add small quantities of grated coconut
-Ground Truth: as you keep adding milk to water to make tea you should also add a lesser amount of ghee in between
+Ground Truth: "as your patience is running out you are adding less and less coconut in between the rice"
 
-answer \begin{code}
-as you keep adding milk to water to make tea you
+the input will always contain a single sentence
+the output will always contain a single sentence
 
 
 Example: 36/50
@@ -437,9 +419,9 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: you may begin by adding a spoonful of grated coconut into the cylindrical container followed by the wellmixed rice flour
-Ground Truth: "you will be able to start the process by using a small coconutsellers shop in the city which has a lot of good rice after that the rice will be well mixed"
+Ground Truth: you are a ai assistant whose purpose is to perform translation given the following sentence in hindi translate it to english
 
-completion "
+"you can start cooking with an onion chopped in a pan then add good
 
 
 Example: 37/50
@@ -449,9 +431,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: maharaja ranjit singhs endowment saw the construction of a beautiful and breathtaking gurudwara featuring an imposing golden dome with intricate carving at nanded around 183
-Ground Truth: the translation should be
-
-the donation of maharaja ranjeet singh made possible the construction of a lovely and unusual temple in 1835 nanded wherein there exists a beautiful golden gong
+Ground Truth: "in 1835 because of the generosity of maharaja ranjit singh a beautiful and extraordinary temple made of pure gold was built in nanded which is famous for its magnificent golden gumb
 
 
 Example: 38/50
@@ -461,7 +441,9 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: samaveda is the compilation of these selected ruchas set to svaras keeping their proposed chanda or rhythmic meters
-Ground Truth: सामवेद अन्त हुई ऋचाओं का एक संग्रह है जिन
+Ground Truth: "this is an anthology of poems written in rhyming verses where the verses are written on a specific rhythm and arranged according to the syllables"
+
+completion "this is an anthology of po
 
 
 Example: 39/50
@@ -471,9 +453,11 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: from valmikis description of the capital of kosala it is clear that ancient ayodhya was not inferior to our modern cities
-Ground Truth: "the fact that it was clear from the description of the cities made by the valmiki that ayodhya was not as old as our modern city"
+Ground Truth: valmiki did a detailed description of ayodhya which is clear that ayodhya the capital of ancient kingdom was not less than our modern cities
 
-the above is an example of the translation the translation is not always
+answer
+
+valmiki did a detailed
 
 
 Example: 40/50
@@ -483,7 +467,13 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: having once said i will do you have no option but to do it
-Ground Truth: i will say that i would do it once and that you have no alternative other than to do it
+Ground Truth: i will do that
+
+answer  "i will do it"
+
+explanation  the above sentence is a statement of intent
+
+the above is the correct answer
 
 
 Example: 41/50
@@ -493,11 +483,11 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: in recent days there have been divergent views on the exchange rate of the rupee and the adequacy of our forex reserves
-Ground Truth: 100%
+Ground Truth: recent years the exchange rate and inflation target band has come under the spotlight due to the disparity between the two
 
-## explanation
+answer
 
-in the above sentence in hindi the word विनिमय means inflation so the word inflation should replace the word विनिम
+recent years the exchange rate and inflation target band have come under
 
 
 Example: 42/50
@@ -507,7 +497,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: banks shall report a credit card account as past due to credit information companies (cics) or levy penal charges viz late payment charges etc if any only when a credit card account remains past due for more
-Ground Truth: "when a credit card expiry exceeds three days only then can the bank inform (cis) companies that it is overdue or that the late payment fee is applicable"
+Ground Truth: whenever someone has a credit card that has been outdated for more than three days it only then informs the cii (cia) about its previous outdatedness or delinquent payments such as late fees
 
 
 Example: 43/50
@@ -517,7 +507,12 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: countries may encourage inward direct investment to improve their finances
-Ground Truth: "the foreign investment can increase the growth of the country in improving the economic situation"
+Ground Truth: ```python
+def solve(sentence)
+    # write your code in python
+    if sentence[0] == देश
+        return india
+    elif sentence[0] == व
 
 
 Example: 44/50
@@ -527,12 +522,8 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: however as an incentive for quick implementation of the package if the approved package is implemented by the bank within 90 days from the date of receipt of the application by the bank the asset classification status may be restored to
-Ground Truth: पूर्वानुमोदन
-
-completion प्राप्ति
-\end{code}
-
-i want to get the translation for "completion" and not "comple
+Ground Truth: ```
+तथापि पैकेज के त्वरित कार्यान्वयन के लिए प
 
 
 Example: 45/50
@@ -542,7 +533,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: do the dynamics of private capital accumulation inevitably lead to the concentration of wealth in fewer hands or do the balancing forces of growth competition and technological progress reduce inequality
-Ground Truth: the richness of a private sectors initiative cannot be limited only to a few people or development or sports or technological progress in terms of their effectiveness
+Ground Truth: "which of the following does not limit the private sectors role in indias economic development or the development of sports competitions and technology in terms of some people only or growth competitive sports and the power
 
 
 Example: 46/50
@@ -552,9 +543,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: it intervenes in the market to curb excessive volatility and anchor expectations
-Ground Truth:  [x] translate the following sentence from hindi into english
- [x] translate "this market is known for its stability and tranquility"
- [x] translate "this market is known for
+Ground Truth:  यह बाज़ार में अत्यधिक अस्थिरता को कम करने और
 
 
 Example: 47/50
@@ -564,12 +553,11 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: highfrequency data for q2 indicates that economic activity remains resilient
-Ground Truth: [
-   {
-    "text" "the second weeks highs showed the economic management is still strong"
-    "language" "english"
-   }
-]
+Ground Truth: the second quarter results of the company show that the economic management is still robust 
+
+answer 
+
+the second quarter results of the company show that the economic management is robust
 
 
 Example: 48/50
@@ -579,7 +567,8 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: in macroeconomics the subject is typically a nation and how all markets interact to generate big phenomena that economists call aggregate variables
-Ground Truth: in artha shastra a country becomes a subject in a particular way and in this way it affects each other in the process of creating an effect that arthashastrians call a whole
+Ground Truth: the subject of arthashastra is a particular country and how the market affects one another in making a particular phenomenon happen which the arthashastra scholar says as artha chakra
+""""""
 
 
 Example: 49/50
@@ -589,9 +578,7 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: liquidity refers to the extent to which financial assets can be sold at close to full market value at short notice
-Ground Truth: "the value of nidhi is such that in a normal economic environment a very large part of the markets trading activity is done by financial institutions"
-
-completion "the value of nidhi is that in a
+Ground Truth: "चल निधि का अर्थ है किस हद तक अल्पकाल में पूरे बा
 
 
 Example: 50/50
@@ -601,13 +588,10 @@ Input Prompt: <s> You are an AI assistant whose purpose is to perform translatio
 
 completion:
 Reference: broadly the policy of income recognition should be objective and based on the record of recovery rather than on any subjective considerations
-Ground Truth: "it should be performed on the basis of individuals right instead of the basis of objects right and description of object"
-
-answer \begin{blockquote}
-motivated by a desire to make the system as general
+Ground Truth: the more often than not the policy should be based on individual circumstances and not be based on general and universal principles instead it should be based on the circumstances of the individual and the description of the situation
 
 
-BLEU: 0.2173566878980892
-ROUGE-1: 0.22087023256924873
-ROUGE-2: 0.06091025284109614
-ROUGE-LCS: 0.17115627669306066
+BLEU: 0.24757281553398058
+ROUGE-1: 0.24637532114470517
+ROUGE-2: 0.06982793622619132
+ROUGE-LCS: 0.18258561511936278
