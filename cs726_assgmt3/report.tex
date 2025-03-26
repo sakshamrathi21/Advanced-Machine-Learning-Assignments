@@ -231,6 +231,66 @@ ROUGE-LCS: 0.1984233891953222
 \end{verbatim}
 
 
+\subsection{Nucleus Sampling}
+Here is how nucleus sampling is implemented with a cumulative probability threshold $p$:
+\begin{verbatim}
+  probs = torch.softmax(logits, dim=-1)
+  sorted_probs, sorted_indices = torch.sort(probs, descending=True)
+  cumulative_probs = torch.cumsum(sorted_probs, dim=-1)
+  boundary = torch.where(cumulative_probs > self.p)[1][0].item()
+  top_p_probs = sorted_probs[:, :boundary + 1]
+  top_p_probs /= top_p_probs.sum()  
+  next_token = torch.multinomial(top_p_probs, num_samples=1)
+\end{verbatim}
+This method first applies the softmax function to the logits to get the probabilities,
+sorts them in descending order, and then calculates the cumulative sum of the probabilities.
+It then selects the first token whose cumulative probability is greater than the threshold $p$ and selects all tokens upto that boundary token.
+
+\subsubsection{$p = 0.5$}
+Sample run:
+\begin{verbatim}
+Example: 15/50
+
+Reference: professor asitkumar bandyopadhyay played a pioneering role in compiling the
+complete history of his hometown howrah titled as howrah saharer itibrrito (first and 
+second volume) in 199
+
+Ground Truth: professor asit kumar banerjee has performed a significant role in the
+history of the complete city of hauz khas in 1994 and 1995 by compiling the history
+of his entire
+
+\end{verbatim}
+Scores:
+\begin{verbatim}
+BLEU: 0.2669039145907473
+ROUGE-1: 0.24325259532449314
+ROUGE-2: 0.08499330501121372
+ROUGE-LCS: 0.19287504481615925
+\end{verbatim}
+
+\subsubsection{$p = 0.9$}
+Sample run:
+\begin{verbatim}
+Example: 17/50
+
+Reference: generations ofmaharaj and khansamas (as expert chefs have traditionally
+been called in india) have perfected the recipes over centuries and these recipes
+have passed through oral tradition over thousands of
+
+Ground Truth: maharajs and khansamos (as if wellschooled jaiyalans are called in
+the tradition of bharat) have for years fed the tradition of these customs to their
+families and now these
+
+\end{verbatim}
+Scores:
+\begin{verbatim}
+BLEU: 0.1981981981981982
+ROUGE-1: 0.19201610044864978
+ROUGE-2: 0.053556909531892384
+ROUGE-LCS: 0.1457742819463726
+\end{verbatim}
+
+
 \clearpage
 \section{Task 1: Word-Constrained Decoding}
 In this part, we maintain a trie data structure. We initialize the trie with the word\_list provided to us. We iterate over the word list, and for each token, generate the encoded list, and add them recursively to the trie. We do this for all the word list tokens.
