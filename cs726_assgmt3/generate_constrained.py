@@ -80,8 +80,6 @@ class ConstrainedTextGenerator:
     
 
     def _get_next_token(self, logits, trie, used_words, generated_tokens, word_list):
-        probs = torch.softmax(logits, dim=-1)
-        sorted_probs, sorted_indices = torch.sort(probs[0], descending=True)
         current_trie = trie
         for token in generated_tokens:
             if token in current_trie:
@@ -89,6 +87,17 @@ class ConstrainedTextGenerator:
             else:
                 current_trie = trie
                 break
+
+        for token_id in range(logits.shape[-1]):
+            if token_id == self.eos_token_id:
+                continue
+            if token_id not in current_trie or token_id not in trie:
+                if not self._is_delimiter(token_id):
+                    logits[0, token_id] = float('-inf')
+        probs = torch.softmax(logits, dim=-1)
+        sorted_probs, sorted_indices = torch.sort(probs[0], descending=True)
+        
+        
         for idx in range(len(sorted_indices)):
             token_id = sorted_indices[idx].item()
             if token_id in current_trie:
