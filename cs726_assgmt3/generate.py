@@ -190,48 +190,30 @@ class TextGenerator:
         generated_tokens = []
         current_ids = input_ids
         past_key_values = None
-        for i in range(self.max_output_len):
+        
+        for _ in range(self.max_output_len):
             outputs = self.model(
-                input_ids = current_ids,
-                past_key_values = past_key_values,
-                use_cache = True
-                )
-
-            logits = outputs.logits
-            
-            logit_last_token = logits[:, -1, :]
+                input_ids=current_ids,
+                past_key_values=past_key_values,
+                use_cache=True
+            )
+            logits = outputs.logits[:, -1, :]
             past_key_values = outputs.past_key_values
-            
-            probs = torch.nn.functional.softmax(logit_last_token, dim=-1)
-
+            probs = torch.softmax(logits, dim=-1)
             sorted_probs, sorted_indices = torch.sort(probs, descending=True)
-
             cumulative_probs = torch.cumsum(sorted_probs, dim=-1)
-
-            nucleus_mask = cumulative_probs <= self.p
-            nucleus_mask[..., 1:] = nucleus_mask[..., :-1].clone()
-            nucleus_mask[..., 0] = True  # Ensure at least one token is always considered
-
-            nucleus_probs = sorted_probs[nucleus_mask]
-            nucleus_indices = sorted_indices[nucleus_mask]
-
-            nucleus_probs /= nucleus_probs.sum()
-
-            next_token = torch.multinomial(nucleus_probs, num_samples=1)
-            next_token = nucleus_indices[next_token]  # Map sampled index to token ID
-
-            token_id = next_token.item()
-
-            token_str = self.tokenizer.decode(next_token.item())  # Decode token ID to string
-
-
-            generated_tokens.append(next_token.item())
-
-
+            boundary = torch.where(cumulative_probs > self.p)[1][0].item()
+            top_p_probs = sorted_probs[:, :boundary + 1]
+            top_p_indices = sorted_indices[:, :boundary + 1]
+            top_p_probs /= top_p_probs.sum()
+            
+            next_token_idx = torch.multinomial(top_p_probs, num_samples=1)
+            next_token = top_p_indices.gather(-1, next_token_idx).squeeze(-1)
+            
             if next_token.item() == self.eos_token_id:
                 break
-
-            input_ids = torch.cat([input_ids, next_token.unsqueeze(0)], dim=-1)
-            input_text = self.tokenizer.decode(input_ids.squeeze(0))  # Decode entire sequence
-
+            
+            generated_tokens.append(next_token.item())
+            current_ids = next_token.unsqueeze(0)
+        
         return torch.tensor(generated_tokens, dtype=torch.long)
