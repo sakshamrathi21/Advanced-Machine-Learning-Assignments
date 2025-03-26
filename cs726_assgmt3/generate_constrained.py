@@ -75,7 +75,6 @@ class ConstrainedTextGenerator:
                 break
             generated_tokens.append(next_token_id)
             current_input_ids = torch.tensor([[next_token_id]], device=current_input_ids.device)
-            self._update_trie_state(trie, generated_tokens, used_words)
         return torch.tensor(generated_tokens)
     
 
@@ -86,49 +85,17 @@ class ConstrainedTextGenerator:
                 current_trie = current_trie[token]
             else:
                 current_trie = trie
-                break
-
-        for token_id in range(logits.shape[-1]):
-            if token_id == self.eos_token_id:
-                continue
-            if token_id not in current_trie or token_id not in trie:
-                if not self._is_delimiter(token_id):
-                    logits[0, token_id] = float('-inf')
-        probs = torch.softmax(logits, dim=-1)
-        sorted_probs, sorted_indices = torch.sort(probs[0], descending=True)
-        
-        
-        for idx in range(len(sorted_indices)):
-            token_id = sorted_indices[idx].item()
-            if token_id in current_trie:
-                return token_id
-            if current_trie == trie and self._is_delimiter(token_id):
-                return token_id
-            if token_id == self.eos_token_id:
-                if len(used_words) == len(word_list):
-                    return token_id
-        return sorted_indices[0].item()
-    
-    def _is_delimiter(self, token_id):
-        token = self.tokenizer.decode([token_id])
-        return token.isspace() or (len(token) == 1 and not token.isalnum())
-    
-    def _update_trie_state(self, trie, generated_tokens, used_words):
-        current = trie
-        word_tokens = []
-        for i in range(len(generated_tokens) - 1, -1, -1):
-            token_id = generated_tokens[i]
-            if self._is_delimiter(token_id):
-                break
-            if token_id in current:
-                word_tokens.insert(0, token_id)
-                current = current[token_id]
-                if '_end_' in current:
-                    word = self.tokenizer.decode(word_tokens)
-                    used_words.add(word)
-                    break
-            else:
-                break
-    
-        
-        
+                if token in current_trie:
+                    current_trie = current_trie[token]
+        if '_end_' in current_trie and current_trie['_end_']:
+            current_trie = trie
+        mask = torch.full_like(logits, float('-inf'))
+        valid_tokens = set()
+        for token_id in current_trie.keys():
+            if token_id != "_end_":
+                valid_tokens.add(token_id)
+        valid_tokens.add(self.eos_token_id)
+        for token_id in valid_tokens:
+            mask[0, token_id] = logits[0, token_id]
+        probs = torch.softmax(mask, dim=-1)
+        return torch.argmax(probs, dim=-1).item()
