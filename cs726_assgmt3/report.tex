@@ -231,4 +231,57 @@ ROUGE-LCS: 0.1984233891953222
 \end{verbatim}
 
 
+\clearpage
+\section{Task 1: Word-Constrained Decoding}
+In this part, we maintain a trie data structure. We initialize the trie with the word\_list provided to us. We iterate over the word list, and for each token, generate the encoded list, and add them recursively to the trie. We do this for all the word list tokens.
+
+Now, when we get some input token sequence, we traverse the generated tokens so far, on the trie (it will be empty in the start). Now, we only choose the indices which are present in this current trie (left after traversal). The probabilities corresponding to all other indices are set to 0 (except EOS).
+
+Here are some sample runs:
+\begin{verbatim}
+Example: 1/50
+
+completion:
+Reference: an appearance is a bunch of attributes related to the service person 
+like their shoes clothes tie jewellery hairstyle makeup watch cosmetics perfume etc
+Ground Truth: service related to the clothes shoes jewellery makeup cosmetics perfume 
+etc
+
+
+Example: 2/50
+
+completion:
+Reference: ajanta located in the aurangabad district of maharashtra has twentynine 
+caitya and vihara caves decorated with sculptures and paintings from the first
+century bce
+Ground Truth: maharashtra in aurangabad district has the ajanta the twentynine 
+caves and the vihara of the first century bce and the fifth century ce 
+sculptures and paint
+\end{verbatim}
+
+
+Here are the scores:
+
+\begin{verbatim}
+BLEU: 0.49101737747273627
+ROUGE-1: 0.5166686923449297
+ROUGE-2: 0.30725054217548464
+ROUGE-LCS: 0.46285263939458976
+\end{verbatim}
+
+
+These scores, are better than all the other decoding techniques which were used in the previous task. 
+
+
+We have another update on this, since the vocabulary is limited, a lot of repetition is possible. To avoid this, we can maintain a count of all the words generated so far (i.e. how many times they are generated), and reduce the probabilities of words, which have occurred more (thus enabling diversity), here are the results with this:
+
+\begin{verbatim}
+BLEU: 0.51359177384347
+ROUGE-1: 0.561631318210662
+ROUGE-2: 0.32122076910829656
+ROUGE-LCS: 0.4811779122080838
+\end{verbatim}
+
+
+
 \end{document}
