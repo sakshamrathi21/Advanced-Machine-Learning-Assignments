@@ -112,5 +112,50 @@ class MedusaTextGenerator:
                 tensor of shape (T,), where T <= self.max_output_len
         '''    
         # TODO:
-        raise NotImplementedError
+        current_input = input_ids.clone()
+        generated_tokens = []
+        for _ in range(self.max_output_len):
+            with torch.no_grad():
+                outputs = self.model(current_input, output_orig=True, medusa_forward=True)
+                head_log_probs = [outputs[2][0, -1, :]]
+                for head_idx in range(0, self.no_heads):
+                    # print("CHECK ", self.no_heads, head_idx)
+                    head_log_probs.append(outputs[0][head_idx][0, -1, :])
+                
+            candidates = [current_input.clone()]
+            scores = [0.0]
+
+            for s, log_prob_dist in enumerate(head_log_probs):
+                # print(s)
+                new_candidates = []
+                new_scores = []
+                for c, candidate in enumerate(candidates):
+                    top_tokens = torch.topk(log_prob_dist, self.beam_width).indices
+                    for top_token in top_tokens:
+                        new_candidate = torch.cat([candidate, top_token.unsqueeze(0).unsqueeze(0)], dim=1)
+                        new_score = scores[c] + log_prob_dist[top_token].item()
+                        new_candidates.append(new_candidate)
+                        new_scores.append(new_score)
+                if len(new_candidates) > 0:
+                    top_indices = torch.topk(torch.tensor(new_scores), min(self.beam_width, len(new_scores))).indices
+                    candidates = [new_candidates[i] for i in top_indices]
+                    scores = [new_scores[i] for i in top_indices]
+            final_scores = []
+            for candidate in candidates:
+                with torch.no_grad():
+                    candidate_outputs = self.model(candidate)
+                    candidate_logits = candidate_outputs.logits
+                    candidate_score = 0
+                    for t in range(input_ids.shape[1], candidate.shape[1]):
+                        token_logits = candidate_logits[0, t-1, :]
+                        candidate_score += token_logits[candidate[0, t].item()]
+                    final_scores.append(candidate_score.item())
+            best_candidate_idx = torch.argmax(torch.tensor(final_scores)).item()
+            best_candidate = candidates[best_candidate_idx]
+            next_token = best_candidate[0, -1].item()
+            generated_tokens.append(next_token)
+            current_input = best_candidate
+            if next_token == self.eos_token_id:
+                break
+        return torch.tensor(generated_tokens, dtype=torch.long)
             
