@@ -146,14 +146,14 @@ class MedusaTextGenerator:
                     candidate_outputs = self.model(candidate)
                     candidate_logits = candidate_outputs.logits
                     candidate_score = 0
-                    for t in range(input_ids.shape[1], candidate.shape[1]):
+                    for t in range(current_input.shape[1], candidate.shape[1]):
                         token_logits = candidate_logits[0, t-1, :]
                         candidate_score += token_logits[candidate[0, t].item()]
                     final_scores.append(candidate_score.item())
             best_candidate_idx = torch.argmax(torch.tensor(final_scores)).item()
             best_candidate = candidates[best_candidate_idx]
             
-            for t in range(input_ids.shape[1], best_candidate.shape[1]):
+            for t in range(current_input.shape[1], best_candidate.shape[1]):
                 next_token = best_candidate[0, t].item()
                 generated_tokens.append(best_candidate[0, t].item())
                 if next_token == self.eos_token_id:
