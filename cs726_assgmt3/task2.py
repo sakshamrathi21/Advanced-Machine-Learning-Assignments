@@ -24,7 +24,7 @@ if __name__ == "__main__":
     parser.add_argument("--max-output-len","-mol", type=int, required=False, default=50, help="Maximum number of new tokens to be generated.")
     parser.add_argument("--beam-width","-w", type=int, required=False, default=2, help="Size of beam width for beam search.")
     parser.add_argument("--decoding-strategy","-ds", type=str, required=False, default="greedy", choices=["single-head", "multi-head"], help="The decoding strategy to be used during inference.")
-    parser.add_argument("--debug","-db",type=bool,default=False, help="To print debugging statements.")
+    parser.add_argument("--debug","-db",type=bool,default=True, help="To print debugging statements.")
     
     args = parser.parse_args() 
     print(args)
