@@ -73,6 +73,26 @@ class MedusaTextGenerator:
                 tensor of shape (T,), where T <= self.max_output_len
         '''    
         # TODO:
+        generated_tokens = []
+        current_ids = input_ids
+        past_key_values = None
+        for i in range(self.max_output_len):
+            outputs = self.model(
+                input_ids=current_ids,
+                past_key_values=past_key_values,
+                use_cache=True
+            )
+            logits = outputs.logits
+            past_key_values = outputs.past_key_values
+            logit_last_token = logits[:, -1, :]
+            next_token = torch.argmax(logit_last_token, dim=-1)
+            token_id = next_token.item()
+            generated_tokens.append(token_id)
+            if token_id == self.eos_token_id:
+                break
+            current_ids = next_token.unsqueeze(0)
+        
+        return torch.tensor(generated_tokens, dtype=torch.long)
         raise NotImplementedError
 
     def multi_head_decoding(
