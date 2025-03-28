@@ -141,7 +141,7 @@ class MedusaTextGenerator:
             final_scores = []
             for candidate in candidates:
                 with torch.no_grad():
-                    candidate_outputs = self.model(candidate, medusa_forward=False)
+                    candidate_outputs = self.model(candidate)
                     candidate_logits = candidate_outputs.logits
                     candidate_score = 0
                     for t in range(current_input.shape[1], candidate.shape[1]):
