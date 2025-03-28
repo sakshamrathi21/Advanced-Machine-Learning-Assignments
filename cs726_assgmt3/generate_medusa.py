@@ -119,14 +119,12 @@ class MedusaTextGenerator:
                 outputs = self.model(current_input, output_orig=True, medusa_forward=True)
                 head_log_probs = [torch.log_softmax(outputs[2][0, -1, :], dim=-1)]
                 for head_idx in range(0, self.no_heads):
-                    # print("CHECK ", self.no_heads, head_idx)
                     head_log_probs.append(torch.log_softmax(outputs[0][head_idx][0, -1, :], dim=-1))
                 
             candidates = [current_input.clone()]
             scores = [0.0]
 
             for s, log_prob_dist in enumerate(head_log_probs):
-                # print(s)
                 new_candidates = []
                 new_scores = []
                 for c, candidate in enumerate(candidates):
@@ -143,23 +141,20 @@ class MedusaTextGenerator:
             final_scores = []
             for candidate in candidates:
                 with torch.no_grad():
-                    candidate_outputs = self.model(candidate)
+                    candidate_outputs = self.model(candidate, medusa_forward=False)
                     candidate_logits = candidate_outputs.logits
                     candidate_score = 0
                     for t in range(current_input.shape[1], candidate.shape[1]):
-                        token_logits = candidate_logits[0, t-1, :]
+                        token_logits = torch.softmax(candidate_logits[0, t-1, :], dim=-1)
                         candidate_score += token_logits[candidate[0, t].item()]
                     final_scores.append(candidate_score.item())
             best_candidate_idx = torch.argmax(torch.tensor(final_scores)).item()
             best_candidate = candidates[best_candidate_idx]
-            
             for t in range(current_input.shape[1], best_candidate.shape[1]):
                 next_token = best_candidate[0, t].item()
-                generated_tokens.append(best_candidate[0, t].item())
+                generated_tokens.append(next_token)
                 if next_token == self.eos_token_id:
                     return torch.tensor(generated_tokens, dtype=torch.long)
-                    break
-            # generated_tokens.append(next_token)
             current_input = best_candidate
             
         return torch.tensor(generated_tokens, dtype=torch.long)
