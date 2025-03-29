@@ -118,12 +118,12 @@ class MedusaTextGenerator:
             with torch.no_grad():
                 outputs = self.model(current_input, output_orig=True, medusa_forward=True)
                 head_log_probs = [torch.log_softmax(outputs[2][0, -1, :], dim=-1)]
-                for head_idx in range(0, self.no_heads):
+                for head_idx in range(0, self.no_heads-1):
                     head_log_probs.append(torch.log_softmax(outputs[0][head_idx][0, -1, :], dim=-1))
                 
             candidates = [current_input.clone()]
             scores = [0.0]
-
+            print(len(head_log_probs), self.no_heads)
             for s, log_prob_dist in enumerate(head_log_probs):
                 new_candidates = []
                 new_scores = []
@@ -134,6 +134,7 @@ class MedusaTextGenerator:
                         new_score = scores[c] + log_prob_dist[top_token].item()
                         new_candidates.append(new_candidate)
                         new_scores.append(new_score)
+                # print(new_scores)
                 if len(new_candidates) > 0:
                     top_indices = torch.topk(torch.tensor(new_scores), min(self.beam_width, len(new_scores))).indices
                     candidates = [new_candidates[i] for i in top_indices]
@@ -150,6 +151,7 @@ class MedusaTextGenerator:
                     final_scores.append(candidate_score.item())
             best_candidate_idx = torch.argmax(torch.tensor(final_scores)).item()
             best_candidate = candidates[best_candidate_idx]
+            print(len(current_input[0]), len(best_candidate[0]))
             for t in range(current_input.shape[1], best_candidate.shape[1]):
                 next_token = best_candidate[0, t].item()
                 generated_tokens.append(next_token)
@@ -158,4 +160,3 @@ class MedusaTextGenerator:
             current_input = best_candidate
             
         return torch.tensor(generated_tokens, dtype=torch.long)
-            
