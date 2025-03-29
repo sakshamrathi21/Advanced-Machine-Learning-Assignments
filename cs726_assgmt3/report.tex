@@ -344,7 +344,7 @@ ROUGE-LCS: 0.4811779122080838
 
 \section{Task 2: Staring into Medusa's Heads}
 
-\subsection{Part (a)}
+\subsection{Part (a) Single Head Decoding}
 This part is essentially similar to the greedy decoding we had done in task-0. We call the main LM head repeatedly. Here are the results:
 
 \begin{verbatim}
@@ -355,6 +355,43 @@ ROUGE-LCS: 0.3176688971932633
 RTF:0.053685568838568606
 \end{verbatim}
 
+\subsection{Part (b) Multi Head Decoding}
+\begin{algorithm}
+  \caption{Multi-Head Decoding}
+  \begin{algorithmic}[1]
+  \Require Input tensor $input\_ids$ of shape $(1, P)$
+  \Ensure Tensor of generated tokens of shape $(T,)$, where $T \leq max\_output\_len$
+  \State $current\_input \gets input\_ids$
+  \State $generated\_tokens \gets []$
+  \While{$|generated\_tokens| < max\_output\_len$}
+      \State $outputs \gets model(current\_input)$
+      \State $head\_log\_probs \gets$ log softmax of model outputs for all heads
+      \State $candidates \gets [current\_input]$, $scores \gets [0.0]$
+      \For{each $log\_prob\_dist$ in $head\_log\_probs$}
+          \State $new\_candidates \gets []$, $new\_scores \gets []$
+          \For{each $candidate, score$ in $candidates$}
+              \State $top\_tokens \gets$ top-k tokens from $log\_prob\_dist$
+              \For{each $top\_token$ in $top\_tokens$}
+                  \State Append $top\_token$ to $candidate$
+                  \State Update score
+                  \State Add new candidate to $new\_candidates$
+              \EndFor
+          \EndFor
+          \State Select top candidates based on scores
+      \EndFor
+      \State Compute final scores for candidates (based on the LM head)
+      \State $best\_candidate \gets$ candidate with highest score
+      \For{each new token in $best\_candidate$}
+          \State Append token to $generated\_tokens$
+          \If{token is EOS}
+              \State \Return $generated\_tokens$
+          \EndIf
+      \EndFor
+      \State $current\_input \gets best\_candidate$
+  \EndWhile
+  \State \Return $generated\_tokens$
+  \end{algorithmic}
+  \end{algorithm}
 
 
 
