@@ -1,2 +1,10 @@
 .DS_Store
 run.sh
+.DS_Store
+*.out
+*.log
+*.fls
+*.aux
+*.fdb_latexmk
+*.synctex.gz
+*.tocHW3/video_data/videos_mat_files.mat
