@@ -449,4 +449,9 @@ RTF:0.053685568838568606
     RTF:0.10445245989625856
     \end{verbatim}
 
+    \begin{itemize}
+      \item As $W$ increases from $2 \rightarrow 5 \rightarrow 10$, BLEU and ROUGE scores improve, indicating better text generation. Larger beam width helps explore better candidates, leading to improved text coherence and similarity to the reference. However, \textbf{RTF increases significantly}, indicating a slower generation process.
+      \item Increasing $S$, reduces BLEU and ROUGE scores. More heads introduce \textbf{diversity} in token predictions but also \textbf{increase noise}, reducing precision. Increasing $S$ significantly \textbf{reduces RTF} (faster inference), meaning multi-head decoding is computationally more efficient.
+    \end{itemize}
+
 \end{document}
