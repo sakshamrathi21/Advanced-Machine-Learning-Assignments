@@ -8,3 +8,4 @@ run.sh
 *.fdb_latexmk
 *.synctex.gz
 *.tocHW3/video_data/videos_mat_files.mat
+A4_test_data.pt
