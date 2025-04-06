@@ -82,14 +82,14 @@ class Algo1_Sampler:
             
             omega_t = torch.randn_like(current_x)
             
-            proposed_x = current_x + (self.epsilon/2) * grad_t + torch.sqrt(torch.tensor(self.epsilon)) * omega_t
+            proposed_x = current_x - (self.epsilon/2) * grad_t + torch.sqrt(torch.tensor(self.epsilon)) * omega_t
             proposed_x.requires_grad_(True)
             
             proposed_energy = self.energy_function(proposed_x)
             grad_proposed = torch.autograd.grad(proposed_energy, proposed_x, create_graph=False)[0]
             
-            log_q_x_given_proposed = -1/(4*self.epsilon) * torch.sum((current_x - (proposed_x + (self.epsilon/2) * grad_proposed))**2)
-            log_q_proposed_given_x = -1/(4*self.epsilon) * torch.sum((proposed_x - (current_x + (self.epsilon/2) * grad_t))**2)
+            log_q_x_given_proposed = -1/(4*self.epsilon) * torch.sum((current_x - (proposed_x - (self.epsilon/2) * grad_proposed))**2)
+            log_q_proposed_given_x = -1/(4*self.epsilon) * torch.sum((proposed_x - (current_x - (self.epsilon/2) * grad_t))**2)
             
             acceptance_prob = min(1.0, torch.exp(energy - proposed_energy + log_q_x_given_proposed - log_q_proposed_given_x).item())
             
@@ -134,7 +134,7 @@ class Algo2_Sampler:
             
             omega_t = torch.randn_like(current_x)
             
-            current_x = current_x.detach() + (self.epsilon/2) * grad_t + torch.sqrt(torch.tensor(self.epsilon)) * omega_t
+            current_x = current_x.detach() - (self.epsilon/2) * grad_t + torch.sqrt(torch.tensor(self.epsilon)) * omega_t
             # current_x.requires_grad_(True)
             
             if t >= self.burn_in:
