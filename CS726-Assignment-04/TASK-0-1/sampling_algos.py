@@ -65,7 +65,7 @@ class Algo1_Sampler:
         self.burn_in = burn_in
         
     def sample(self, x_0):
-        x_0 = x_0.to(DEVICE)
+        x_0 = x_0.clone().detach().to(DEVICE)
         x_0.requires_grad_(True)
         
         samples = []
@@ -74,12 +74,11 @@ class Algo1_Sampler:
         accepted = 0
         start_time = time.time()
         burn_in_time = None
-        
         for t in range(self.n_samples):
+            current_x.requires_grad_(True)
             energy = self.energy_function(current_x)
-            energy.backward()
-            grad_t = current_x.grad.clone()
-            current_x.grad.zero_()
+            grad_t = torch.autograd.grad(energy, current_x, create_graph=False)[0]
+            # current_x.grad.zero_()
             
             omega_t = torch.randn_like(current_x)
             
@@ -87,9 +86,7 @@ class Algo1_Sampler:
             proposed_x.requires_grad_(True)
             
             proposed_energy = self.energy_function(proposed_x)
-            proposed_energy.backward()
-            grad_proposed = proposed_x.grad.clone()
-            proposed_x.grad.zero_()
+            grad_proposed = torch.autograd.grad(proposed_energy, proposed_x, create_graph=False)[0]
             
             log_q_x_given_proposed = -1/(4*self.epsilon) * torch.sum((current_x - (proposed_x + (self.epsilon/2) * grad_proposed))**2)
             log_q_proposed_given_x = -1/(4*self.epsilon) * torch.sum((proposed_x - (current_x + (self.epsilon/2) * grad_t))**2)
@@ -121,7 +118,7 @@ class Algo2_Sampler:
         self.burn_in = burn_in
         
     def sample(self, x_0):
-        x_0 = x_0.to(DEVICE)
+        x_0 = x_0.clone().detach().to(DEVICE)
         x_0.requires_grad_(True)
         
         samples = []
@@ -131,15 +128,14 @@ class Algo2_Sampler:
         burn_in_time = None
         
         for t in range(self.n_samples):
+            current_x.requires_grad_(True)
             energy = self.energy_function(current_x)
-            energy.backward()
-            grad_t = current_x.grad.clone()
-            current_x.grad.zero_()
+            grad_t = torch.autograd.grad(energy, current_x, create_graph=False)[0]
             
             omega_t = torch.randn_like(current_x)
             
-            current_x = current_x + (self.epsilon/2) * grad_t + torch.sqrt(torch.tensor(self.epsilon)) * omega_t
-            current_x.requires_grad_(True)
+            current_x = current_x.detach() + (self.epsilon/2) * grad_t + torch.sqrt(torch.tensor(self.epsilon)) * omega_t
+            # current_x.requires_grad_(True)
             
             if t >= self.burn_in:
                 samples.append(current_x.detach().cpu())
@@ -220,19 +216,15 @@ if __name__ == "__main__":
     print(f"Loading model weights from: {model_weights_path}")
     model.load_state_dict(torch.load(model_weights_path, map_location=DEVICE))
     
-    # Set the model to evaluation mode
     model.eval()
     
-    # Set sampling parameters
     n_samples = 2000
     burn_in = 200
     epsilon = 0.01
     
-    # Initial state (random state in the input dimension)
     print(f"Initializing random starting state with dimension {FEAT_DIM}...")
     x_0 = torch.randn(1, FEAT_DIM).to(DEVICE)
     
-    # Algorithm 1
     print("\nRunning Algorithm 1 (MH-MCMC)...")
     algo1_sampler = Algo1_Sampler(model, epsilon=epsilon, n_samples=n_samples, burn_in=burn_in)
     samples_algo1, acceptance_rate_algo1, burn_in_time_algo1 = algo1_sampler.sample(x_0)
@@ -240,19 +232,16 @@ if __name__ == "__main__":
     print(f"Algorithm 1 - Time to Burn-in: {burn_in_time_algo1:.4f} seconds")
     print(f"Algorithm 1 - Generated {len(samples_algo1)} samples after burn-in")
     
-    # Algorithm 2
     print("\nRunning Algorithm 2 (Langevin)...")
     algo2_sampler = Algo2_Sampler(model, epsilon=epsilon, n_samples=n_samples, burn_in=burn_in)
     samples_algo2, _, burn_in_time_algo2 = algo2_sampler.sample(x_0)
     print(f"Algorithm 2 - Time to Burn-in: {burn_in_time_algo2:.4f} seconds")
     print(f"Algorithm 2 - Generated {len(samples_algo2)} samples after burn-in")
     
-    # Compare burn-in times
     print(f"\nBurn-in time comparison:")
     print(f"Algorithm 1 (MH-MCMC): {burn_in_time_algo1:.4f} seconds")
     print(f"Algorithm 2 (Langevin): {burn_in_time_algo2:.4f} seconds")
     
-    # Visualize samples
     print("\nVisualizing samples using t-SNE...")
     visualize_samples(samples_algo1, samples_algo2, title=f"MCMC Samples (ε={epsilon})")
     
