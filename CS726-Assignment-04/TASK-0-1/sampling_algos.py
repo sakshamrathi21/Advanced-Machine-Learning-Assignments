@@ -77,7 +77,7 @@ class Algo1_Sampler:
         for t in range(self.n_samples):
             current_x.requires_grad_(True)
             energy = self.energy_function(current_x)
-            grad_t = torch.autograd.grad(energy, current_x, create_graph=False)[0]
+            grad_t,  = torch.autograd.grad(energy.sum(), current_x, create_graph=False)
             # current_x.grad.zero_()
             
             omega_t = torch.randn_like(current_x)
@@ -86,15 +86,15 @@ class Algo1_Sampler:
             proposed_x.requires_grad_(True)
             
             proposed_energy = self.energy_function(proposed_x)
-            grad_proposed = torch.autograd.grad(proposed_energy, proposed_x, create_graph=False)[0]
+            grad_proposed,  = torch.autograd.grad(proposed_energy.sum(), proposed_x, create_graph=False)
             
             log_q_x_given_proposed = -1/(4*self.epsilon) * torch.sum((current_x - (proposed_x - (self.epsilon/2) * grad_proposed))**2)
             log_q_proposed_given_x = -1/(4*self.epsilon) * torch.sum((proposed_x - (current_x - (self.epsilon/2) * grad_t))**2)
             
             acceptance_prob = min(1.0, torch.exp(energy - proposed_energy + log_q_x_given_proposed - log_q_proposed_given_x).item())
             
-            u = np.random.uniform(0, 1)
-            
+            # u = np.random.uniform(0, 1)
+            u = torch.rand(1).item()
             if u < acceptance_prob:
                 current_x = proposed_x.detach().clone()
                 current_x.requires_grad_(True)
@@ -130,7 +130,7 @@ class Algo2_Sampler:
         for t in range(self.n_samples):
             current_x.requires_grad_(True)
             energy = self.energy_function(current_x)
-            grad_t = torch.autograd.grad(energy, current_x, create_graph=False)[0]
+            grad_t,  = torch.autograd.grad(energy.sum(), current_x, create_graph=False)
             
             omega_t = torch.randn_like(current_x)
             
@@ -203,31 +203,20 @@ def visualize_samples(samples_algo1, samples_algo2, title="MCMC Samples"):
     plt.savefig("mcmc_samples_tsne_3d.png")
     plt.close()
 
-# --- Main Execution ---
-if __name__ == "__main__":
-    print(f"Using device: {DEVICE}")
-    
-    # Load the pre-trained energy function model
-    print("Loading pre-trained energy function model...")
+if __name__ == "__main__":    
     model = EnergyRegressor(FEAT_DIM).to(DEVICE)
-    
-    # Load the model weights (adjust path if needed)
     model_weights_path = '../trained_model_weights.pth'
-    print(f"Loading model weights from: {model_weights_path}")
     model.load_state_dict(torch.load(model_weights_path, map_location=DEVICE))
-    
     model.eval()
-    
     n_samples = 2000
     burn_in = 200
     epsilon = 0.01
-    
-    print(f"Initializing random starting state with dimension {FEAT_DIM}...")
     x_0 = torch.randn(1, FEAT_DIM).to(DEVICE)
     
     print("\nRunning Algorithm 1 (MH-MCMC)...")
     algo1_sampler = Algo1_Sampler(model, epsilon=epsilon, n_samples=n_samples, burn_in=burn_in)
     samples_algo1, acceptance_rate_algo1, burn_in_time_algo1 = algo1_sampler.sample(x_0)
+    print(samples_algo1)
     print(f"Algorithm 1 - Acceptance Rate: {acceptance_rate_algo1:.4f}")
     print(f"Algorithm 1 - Time to Burn-in: {burn_in_time_algo1:.4f} seconds")
     print(f"Algorithm 1 - Generated {len(samples_algo1)} samples after burn-in")
@@ -235,6 +224,7 @@ if __name__ == "__main__":
     print("\nRunning Algorithm 2 (Langevin)...")
     algo2_sampler = Algo2_Sampler(model, epsilon=epsilon, n_samples=n_samples, burn_in=burn_in)
     samples_algo2, _, burn_in_time_algo2 = algo2_sampler.sample(x_0)
+    print(samples_algo2)
     print(f"Algorithm 2 - Time to Burn-in: {burn_in_time_algo2:.4f} seconds")
     print(f"Algorithm 2 - Generated {len(samples_algo2)} samples after burn-in")
     
