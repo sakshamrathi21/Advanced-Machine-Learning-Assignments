@@ -151,10 +151,12 @@ def visualize_samples(samples_algo1, samples_algo2, title="MCMC Samples"):
     samples_algo2_flat = torch.stack(samples_algo2).view(len(samples_algo2), -1)
     
     all_samples = torch.cat([samples_algo1_flat, samples_algo2_flat], dim=0)
+    # print(all_samples)
     labels = np.concatenate([np.zeros(len(samples_algo1)), np.ones(len(samples_algo2))])
 
     tsne = TSNE(n_components=2, random_state=SEED)
     samples_tsne = tsne.fit_transform(all_samples.numpy())
+    print(samples_tsne)
 
     plt.figure(figsize=(12, 10))
     
@@ -208,15 +210,15 @@ if __name__ == "__main__":
     model_weights_path = '../trained_model_weights.pth'
     model.load_state_dict(torch.load(model_weights_path, map_location=DEVICE))
     model.eval()
-    n_samples = 2000
-    burn_in = 200
-    epsilon = 0.01
+    n_samples = 1000
+    burn_in = 100
+    epsilon = 0.001
     x_0 = torch.randn(1, FEAT_DIM).to(DEVICE)
     
     print("\nRunning Algorithm 1 (MH-MCMC)...")
     algo1_sampler = Algo1_Sampler(model, epsilon=epsilon, n_samples=n_samples, burn_in=burn_in)
     samples_algo1, acceptance_rate_algo1, burn_in_time_algo1 = algo1_sampler.sample(x_0)
-    print(samples_algo1)
+    # print(samples_algo1)
     print(f"Algorithm 1 - Acceptance Rate: {acceptance_rate_algo1:.4f}")
     print(f"Algorithm 1 - Time to Burn-in: {burn_in_time_algo1:.4f} seconds")
     print(f"Algorithm 1 - Generated {len(samples_algo1)} samples after burn-in")
@@ -224,7 +226,7 @@ if __name__ == "__main__":
     print("\nRunning Algorithm 2 (Langevin)...")
     algo2_sampler = Algo2_Sampler(model, epsilon=epsilon, n_samples=n_samples, burn_in=burn_in)
     samples_algo2, _, burn_in_time_algo2 = algo2_sampler.sample(x_0)
-    print(samples_algo2)
+    # print(samples_algo2)
     print(f"Algorithm 2 - Time to Burn-in: {burn_in_time_algo2:.4f} seconds")
     print(f"Algorithm 2 - Generated {len(samples_algo2)} samples after burn-in")
     
@@ -234,5 +236,3 @@ if __name__ == "__main__":
     
     print("\nVisualizing samples using t-SNE...")
     visualize_samples(samples_algo1, samples_algo2, title=f"MCMC Samples (ε={epsilon})")
-    
-    print("\nDone! Check the generated visualization files.")
