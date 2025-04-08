@@ -216,7 +216,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run MCMC sampling with two algorithms.")
     parser.add_argument("--n_samples", type=int, default=1000, help="Number of samples to generate")
     parser.add_argument("--burn_in", type=int, default=500, help="Number of burn-in steps")
-    parser.add_argument("--epsilon", type=float, default=0.01, help="Step size for Langevin dynamics")
+    parser.add_argument("--epsilon", type=float, default=0.9, help="Step size for Langevin dynamics")
 
     args = parser.parse_args()
 
