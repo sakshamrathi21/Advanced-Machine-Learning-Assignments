@@ -5,10 +5,13 @@ import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
+import argparse
 import time
 ##########################################################
 # Other settings
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+torch.randn(1).to(DEVICE) + torch.randn(1).to(DEVICE)
+
 SEED = 42
 # --- Configuration ---
 FEAT_DIM = 784 # Input dimension
@@ -74,7 +77,7 @@ class Algo1_Sampler:
         accepted = 0
         start_time = time.time()
         burn_in_time = None
-        for t in range(self.n_samples):
+        for t in range(self.n_samples + self.burn_in):
             current_x.requires_grad_(True)
             energy = self.energy_function(current_x)
             grad_t,  = torch.autograd.grad(energy.sum(), current_x, create_graph=False)
@@ -127,7 +130,7 @@ class Algo2_Sampler:
         start_time = time.time()
         burn_in_time = None
         
-        for t in range(self.n_samples):
+        for t in range(self.n_samples + self.burn_in):
             current_x.requires_grad_(True)
             energy = self.energy_function(current_x)
             grad_t,  = torch.autograd.grad(energy.sum(), current_x, create_graph=False)
@@ -156,7 +159,7 @@ def visualize_samples(samples_algo1, samples_algo2, title="MCMC Samples"):
 
     tsne = TSNE(n_components=2, random_state=SEED)
     samples_tsne = tsne.fit_transform(all_samples.numpy())
-    print(samples_tsne)
+    # print(samples_tsne)
 
     plt.figure(figsize=(12, 10))
     
@@ -210,9 +213,16 @@ if __name__ == "__main__":
     model_weights_path = '../trained_model_weights.pth'
     model.load_state_dict(torch.load(model_weights_path, map_location=DEVICE))
     model.eval()
-    n_samples = 1000
-    burn_in = 100
-    epsilon = 0.001
+    parser = argparse.ArgumentParser(description="Run MCMC sampling with two algorithms.")
+    parser.add_argument("--n_samples", type=int, default=1000, help="Number of samples to generate")
+    parser.add_argument("--burn_in", type=int, default=500, help="Number of burn-in steps")
+    parser.add_argument("--epsilon", type=float, default=0.01, help="Step size for Langevin dynamics")
+
+    args = parser.parse_args()
+
+    n_samples = args.n_samples
+    burn_in = args.burn_in
+    epsilon = args.epsilon
     x_0 = torch.randn(1, FEAT_DIM).to(DEVICE)
     
     print("\nRunning Algorithm 1 (MH-MCMC)...")
@@ -222,7 +232,12 @@ if __name__ == "__main__":
     print(f"Algorithm 1 - Acceptance Rate: {acceptance_rate_algo1:.4f}")
     print(f"Algorithm 1 - Time to Burn-in: {burn_in_time_algo1:.4f} seconds")
     print(f"Algorithm 1 - Generated {len(samples_algo1)} samples after burn-in")
-    
+    sum = 0
+    for sample in samples_algo1:
+        sample = sample.to(DEVICE)
+        sum += torch.exp(-model(sample))
+    sum /= len(samples_algo1)
+    print("Mean probability: ", sum)    
     print("\nRunning Algorithm 2 (Langevin)...")
     algo2_sampler = Algo2_Sampler(model, epsilon=epsilon, n_samples=n_samples, burn_in=burn_in)
     samples_algo2, _, burn_in_time_algo2 = algo2_sampler.sample(x_0)
@@ -233,6 +248,13 @@ if __name__ == "__main__":
     print(f"\nBurn-in time comparison:")
     print(f"Algorithm 1 (MH-MCMC): {burn_in_time_algo1:.4f} seconds")
     print(f"Algorithm 2 (Langevin): {burn_in_time_algo2:.4f} seconds")
+
+    sum = 0
+    for sample in samples_algo2:
+        sample = sample.to(DEVICE)
+        sum += torch.exp(-model(sample))
+    sum /= len(samples_algo1)
+    print("Mean probability: ", sum)  
     
     print("\nVisualizing samples using t-SNE...")
     visualize_samples(samples_algo1, samples_algo2, title=f"MCMC Samples (ε={epsilon})")
