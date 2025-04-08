@@ -96,7 +96,6 @@ class Algo1_Sampler:
             
             acceptance_prob = min(1.0, torch.exp(energy - proposed_energy + log_q_x_given_proposed - log_q_proposed_given_x).item())
             
-            # u = np.random.uniform(0, 1)
             u = torch.rand(1).item()
             if u < acceptance_prob:
                 current_x = proposed_x.detach().clone()
@@ -108,7 +107,7 @@ class Algo1_Sampler:
             
             if t == self.burn_in and burn_in_time is None:
                 burn_in_time = time.time() - start_time
-        
+        # print(accepted)
         acceptance_rate = accepted / self.n_samples
         return samples, acceptance_rate, burn_in_time
 
@@ -149,7 +148,7 @@ class Algo2_Sampler:
         return samples, None, burn_in_time
 
 
-def visualize_samples(samples_algo1, samples_algo2, title="MCMC Samples"):
+def visualize_samples(samples_algo1, samples_algo2, title="MCMC Samples", filename_prefix="mcmc_samples"):
     samples_algo1_flat = torch.stack(samples_algo1).view(len(samples_algo1), -1)
     samples_algo2_flat = torch.stack(samples_algo2).view(len(samples_algo2), -1)
     
@@ -179,7 +178,7 @@ def visualize_samples(samples_algo1, samples_algo2, title="MCMC Samples"):
     
     plt.title(title)
     plt.legend()
-    plt.savefig("mcmc_samples_tsne.png")
+    plt.savefig(f"{filename_prefix}_tsne_2d.png")
     plt.close()
     
     fig = plt.figure(figsize=(12, 10))
@@ -205,7 +204,7 @@ def visualize_samples(samples_algo1, samples_algo2, title="MCMC Samples"):
     
     ax.set_title(title + " (3D)")
     ax.legend()
-    plt.savefig("mcmc_samples_tsne_3d.png")
+    plt.savefig(f"{filename_prefix}_tsne_3d.png")
     plt.close()
 
 if __name__ == "__main__":    
@@ -237,24 +236,20 @@ if __name__ == "__main__":
         sample = sample.to(DEVICE)
         sum += torch.exp(-model(sample))
     sum /= len(samples_algo1)
-    print("Mean probability: ", sum)    
+    print("Mean probability for Algo1: ", sum)    
     print("\nRunning Algorithm 2 (Langevin)...")
     algo2_sampler = Algo2_Sampler(model, epsilon=epsilon, n_samples=n_samples, burn_in=burn_in)
     samples_algo2, _, burn_in_time_algo2 = algo2_sampler.sample(x_0)
     # print(samples_algo2)
     print(f"Algorithm 2 - Time to Burn-in: {burn_in_time_algo2:.4f} seconds")
     print(f"Algorithm 2 - Generated {len(samples_algo2)} samples after burn-in")
-    
-    print(f"\nBurn-in time comparison:")
-    print(f"Algorithm 1 (MH-MCMC): {burn_in_time_algo1:.4f} seconds")
-    print(f"Algorithm 2 (Langevin): {burn_in_time_algo2:.4f} seconds")
 
     sum = 0
     for sample in samples_algo2:
         sample = sample.to(DEVICE)
         sum += torch.exp(-model(sample))
     sum /= len(samples_algo1)
-    print("Mean probability: ", sum)  
+    print("Mean probability for Algo2: ", sum)  
     
-    print("\nVisualizing samples using t-SNE...")
-    visualize_samples(samples_algo1, samples_algo2, title=f"MCMC Samples (ε={epsilon})")
+    filename_prefix = f"samples_eps{epsilon}_n{n_samples}_burn{burn_in}"
+    visualize_samples(samples_algo1, samples_algo2, title=f"MCMC Samples (ε={epsilon})", filename_prefix=filename_prefix)
