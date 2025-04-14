@@ -138,5 +138,7 @@ Here is the output generated when we run the script:
 As shown in the output above, the model was and dataset were loaded successfully. The model architecture is a feedforward neural network with 24 layers, and the dataset contains 100,000 samples. The loss value of 288.1554 indicates the performance of the model on the test dataset.
 
 \section*{Task 1: MCMC Sampling Implementation}
+Apart from calculating the acceptance probability, and the burn in time, we calculate the mean probability of the samples which are generated. This is basically the average of $e^{-E(x)}$, where $x$ is the sample (the expression is un-normalized). This lets us know, whether after the burn-in, we were able to reach the high probability regions or not.
+
 
 \end{document}
