@@ -25,6 +25,7 @@
 \usepackage{pagecolor}
 \usepackage{mathpazo}   % Palatino font (serif)
 \usepackage{microtype}  % Better typography
+% \usepackage{subfigure}
 
 % Page background color
 \pagecolor{gray!10!white}
@@ -139,6 +140,113 @@ As shown in the output above, the model was and dataset were loaded successfully
 
 \section*{Task 1: MCMC Sampling Implementation}
 Apart from calculating the acceptance probability, and the burn in time, we calculate the mean probability of the samples which are generated. This is basically the average of $e^{-E(x)}$, where $x$ is the sample (the expression is un-normalized). This lets us know, whether after the burn-in, we were able to reach the high probability regions or not.
+The heat map below summarizes all the experiments we had run to check the performance of both the algorithms:
+\begin{figure}[H]
+  \includegraphics[width=\textwidth]{TASK-0-1/heatmap_prob.png}
+  \caption{Heatmap showing the mean probability across various burn-in values and the number of samples for both the algorithms}
+\end{figure}
+
+Firstly, we observe that maxima of this probability is detected around $\tau = 0.1$, for both the algorithms, across various burn-in values.
 
 
+Also, the probabilities typically increase, as we have more burn-in samples (which is actually obvious, because the actual samples are generated after this burn-in period, so less likely samples are already rejected).
+
+
+Next, we used t-Sne, to plot these high dimensional samples into 1-D or 2-D. Here we show some of the results. Each image has samples plotted from both the algorithms:
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{TASK-0-1/images/samples_eps0.01_n1000_burn1000_tsne_2d.png}
+    % \caption*{(a) }
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{TASK-0-1/images/samples_eps0.01_n1000_burn1000_tsne_3d.png}
+    % \caption*{(b) $\tau = 0.01$, Number of samples = 1000, Burn-in period = 1000}
+  \end{minipage}
+  \caption{$\tau = 0.01$, Number of samples = 1000, burn-in samples = 1000}
+\end{figure}
+
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{TASK-0-1/images/samples_eps0.05_n1000_burn1000_tsne_2d.png}
+    % \caption*{(a) }
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{TASK-0-1/images/samples_eps0.05_n1000_burn1000_tsne_3d.png}
+    % \caption*{(b) $\tau = 0.01$, Number of samples = 1000, Burn-in period = 1000}
+  \end{minipage}
+  \caption{$\tau = 0.05$, Number of samples = 1000, burn-in samples = 1000}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{TASK-0-1/images/samples_eps0.1_n1000_burn50_tsne_2d.png}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{TASK-0-1/images/samples_eps0.1_n1000_burn50_tsne_3d.png}
+  \end{minipage}
+  \caption{$\tau = 0.1$, Number of samples = 1000, burn-in samples = 50}
+\end{figure}
+
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{TASK-0-1/images/samples_eps0.1_n1000_burn200_tsne_2d.png}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{TASK-0-1/images/samples_eps0.1_n1000_burn200_tsne_3d.png}
+  \end{minipage}
+  \caption{$\tau = 0.1$, Number of samples = 1000, burn-in samples = 200}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{TASK-0-1/images/samples_eps0.1_n1000_burn500_tsne_2d.png}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{TASK-0-1/images/samples_eps0.1_n1000_burn500_tsne_3d.png}
+  \end{minipage}
+  \caption{$\tau = 0.1$, Number of samples = 1000, burn-in samples = 500}
+\end{figure}
+
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{TASK-0-1/images/samples_eps0.1_n1000_burn500_tsne_2d.png}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{TASK-0-1/images/samples_eps0.1_n1000_burn1000_tsne_3d.png}
+  \end{minipage}
+  \caption{$\tau = 0.1$, Number of samples = 1000, burn-in samples = 1000}
+\end{figure}
+
+
+\begin{figure}[H]
+  \centering
+  \begin{minipage}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{TASK-0-1/images/samples_eps0.6_n1000_burn500_tsne_2d.png}
+  \end{minipage}
+  \hfill
+  \begin{minipage}{0.48\textwidth}
+    \includegraphics[width=\linewidth]{TASK-0-1/images/samples_eps0.6_n1000_burn1000_tsne_3d.png}
+  \end{minipage}
+  \caption{$\tau = 0.6$, Number of samples = 1000, burn-in samples = 1000}
+\end{figure}
+
+
+
+As, we can see, algorithm-1 performs quite badly, in case the value of $\tau$ is more than $0.4$ (the acceptance probability is roughly 0, so we aren't able to move much from our initial guess). The detailed result are present in the file \texttt{TASK-0-1/out}, which shows the burn-in times, along with acceptance probabilities, for all the experiments done.
 \end{document}
