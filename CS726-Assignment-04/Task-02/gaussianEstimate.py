@@ -106,7 +106,7 @@ def main():
     acquisition_strategies = {
         'EI': expected_improvement,
         'PI': probability_of_improvement,
-        'None' : None
+        'random': 'random'
     }
     
     x1_test = np.linspace(-5, 10, 100)
@@ -131,8 +131,13 @@ def main():
                                                         kernel_func, length_scale, sigma_f, noise)
                 y_mean_grid = y_mean.reshape(x1_grid.shape)
                 y_std_grid = y_std.reshape(x1_grid.shape)
+
+                if acq_func == 'random':
+                    next_idx = np.random.randint(len(x_test))
+                    x_new = x_test[next_idx]
+                    y_new = branin_hoo(x_new)
                 
-                if acq_func is not None:
+                elif acq_func is not None:
                     # Hint: Find y_best, apply acq_func, select new point, update training set, recompute GP
                     y_best = np.min(y_train_current)
                     acq_values = acq_func(y_mean, y_std, y_best)
@@ -147,7 +152,7 @@ def main():
                     y_mean_grid = y_mean.reshape(x1_grid.shape)
                     y_std_grid = y_std.reshape(x1_grid.shape)
                 
-                acq_label = '' if acq_name == 'None' else f', Acq={acq_name}'
+                acq_label = 'random' if acq_name == 'random' else f', Acq={acq_name}'
                 plot_graph(x1_grid, x2_grid, true_values, x_train_current,
                           f'True Branin-Hoo Function (n={n_samples}, Kernel={kernel_label}{acq_label})',
                           f'true_function_{kernel_name}_n{n_samples}_{acq_name}.png')
